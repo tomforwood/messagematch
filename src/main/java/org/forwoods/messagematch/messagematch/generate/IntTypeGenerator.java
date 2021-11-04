@@ -5,12 +5,12 @@ import java.math.BigInteger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
-public class IntTypeGenerator implements NodeGenerator {
+public class IntTypeGenerator extends NodeGenerator {
 
 	private final BigInteger value;
 
-	public IntTypeGenerator(String value) {
-		super();
+	public IntTypeGenerator(String value, String binding) {
+		super(binding);
 		if (value == null) {
 			this.value = BigInteger.ZERO;
 		} else {

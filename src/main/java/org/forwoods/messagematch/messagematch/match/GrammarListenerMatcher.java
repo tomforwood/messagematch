@@ -1,22 +1,31 @@
 package org.forwoods.messagematch.messagematch.match;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import org.forwoods.messagematch.messagematch.matchgrammar.MatcherBaseListener;
 import org.forwoods.messagematch.messagematch.matchgrammar.MatcherParser.BoundsMatcherContext;
+import org.forwoods.messagematch.messagematch.matchgrammar.MatcherParser.NumOrVarContext;
 import org.forwoods.messagematch.messagematch.matchgrammar.MatcherParser.RegexpMatcherContext;
 import org.forwoods.messagematch.messagematch.matchgrammar.MatcherParser.TypeMatcherContext;
 
 public class GrammarListenerMatcher extends MatcherBaseListener {
 
 	FieldMatcher result;
+	private final Map<String, String> bindings;
 	
+	public GrammarListenerMatcher(Map<String, String> bindings) {
+		super();
+		this.bindings = bindings;
+	}
+
 	@Override
 	public void exitTypeMatcher(TypeMatcherContext ctx) {
-		String type = ctx.getChild(0).getText();
+		String type = ctx.type.getText();
+		String binding = ctx.binding()==null?null:ctx.binding().IDENTIFIER().getText();
 		switch (type) {
 		case "Int":
-			result = new IntTypeMatcher();
+			result = new IntTypeMatcher(binding);
 			break;
 			default:
 				throw new UnsupportedOperationException("Cant match against type");
@@ -26,26 +35,37 @@ public class GrammarListenerMatcher extends MatcherBaseListener {
 	@Override
 	public void exitRegexpMatcher(RegexpMatcherContext ctx) {
 		String regexp;
-		String text = ctx.getChild(0).getText();
-		regexp = text.substring(1, text.length()-1);
-		regexp = regexp.replaceAll("\\\\\\^", "^");
-		result = new RegExpMatcher(regexp);
+		String text = ctx.RE().getText();
+		String binding = ctx.binding()==null?null:ctx.binding().getText();
+		regexp = text.substring(1, text.length()-1);//strip off the delimiters
+		regexp = regexp.replaceAll("\\\\\\^", "^");//and unescape
+		result = new RegExpMatcher(regexp, binding);
 	}
 
 	@Override
 	public void exitBoundsMatcher(BoundsMatcherContext ctx) {
-		String operator = ctx.getChild(0).getText();
-		if (operator.equals("+-")) {
-			String value = ctx.getChild(2).getText();
-			String eta = ctx.getChild(4).getText();
-			BigDecimal v = new BigDecimal(value);
-			BigDecimal x = new BigDecimal(eta);
-			result =  new BoundsMatcher(operator, v, x);
+		String operator = ctx.op.getText();
+		String binding = ctx.binding()==null?null:ctx.binding().IDENTIFIER().getText();
+
+		String value=null;
+		NumOrVarContext val = ctx.val;
+		if (val.NUMBER()!=null) {
+			value = val.NUMBER().getText();
 		}
 		else {
-			String value = ctx.getChild(1).getText();
+			String var = val.variable().IDENTIFIER().getText();
+			value = bindings.get(var);
+			if (value==null) throw new UnboundVariableException(var);
+		}
+		if (operator.equals("+-")) {
+			String eta = ctx.eta.getText();
 			BigDecimal v = new BigDecimal(value);
-			result =  new BoundsMatcher(operator, v, null);
+			BigDecimal x = new BigDecimal(eta);
+			result =  new BoundsMatcher(operator, v, x, binding);
+		}
+		else {
+			BigDecimal v = new BigDecimal(value);
+			result =  new BoundsMatcher(operator, v, null, binding);
 		}
 	}
 	

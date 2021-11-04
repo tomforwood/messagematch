@@ -29,7 +29,8 @@ public class TestGenerate {
 			new GenerateTest("int-type", "int-type"),
 			new GenerateTest("regexp-basic", "regexp-basic-pass"),
 			new GenerateTest("bounds", "int-type"),
-			new GenerateTest("greater-than", "int-type")
+			new GenerateTest("greater-than", "int-type"),
+			new GenerateTest("binding", "binding-pass")
 		};
 	static ObjectMapper mapper;
 	
@@ -52,7 +53,7 @@ public class TestGenerate {
 		JsonNode node = jsonGenerator.generate();
 		JsonNode expected = mapper.readTree(cin);
 		
-		JsonMatcher matcher = new JsonMatcher(node, expected);
+		JsonMatcher matcher = new JsonMatcher(expected, node);//notice order flipping here
 		boolean matches = matcher.matches();
 		assertTrue(matches, ()->matcher.getErrors().toString());
 	}

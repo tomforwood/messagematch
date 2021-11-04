@@ -27,7 +27,13 @@ class TestMatching {
 			new MatchingTest("regexp-basic", "regexp-basic-pass", true),
 			new MatchingTest("regexp-basic", "regexp-basic-fail", false, "[Error at root:value expected matching $^[\\^0-9]*^,abc but was 0]"),
 			new MatchingTest("bounds", "int-type", true),
-			new MatchingTest("greater-than", "int-type", true)};
+			new MatchingTest("greater-than", "int-type", true),
+			new MatchingTest("binding", "binding-pass", true),
+			new MatchingTest("binding", "binding-fail", false, "[Error at root:value2 expected matching $>5=myVar but was 7]"),
+			new MatchingTest("binding-bounds", "binding-bounds-pass", true),
+			new MatchingTest("binding-bounds", "binding-bounds-fail", false, "[Error at root:value2 expected matching $>$myVar but was 6]"),
+			new MatchingTest("binding-unbound", "binding-bounds-pass", false, "[Error at root:value2 expected matching myVar2 to be bound but was unbound]")
+			};
 
 	@ParameterizedTest
 	@MethodSource("getFiles")

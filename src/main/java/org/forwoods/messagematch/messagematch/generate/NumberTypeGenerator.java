@@ -5,12 +5,12 @@ import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
-public class NumberTypeGenerator implements NodeGenerator {
+public class NumberTypeGenerator extends NodeGenerator {
 
 	private final BigDecimal value;
 
-	public NumberTypeGenerator(String value) {
-		super();
+	public NumberTypeGenerator(String value, String binding) {
+		super(binding);
 		if (value == null) {
 			this.value = BigDecimal.ZERO;
 		} else {
@@ -18,7 +18,8 @@ public class NumberTypeGenerator implements NodeGenerator {
 		}
 	}
 
-	public NumberTypeGenerator(BigDecimal val) {
+	public NumberTypeGenerator(BigDecimal val, String binding) {
+		super(binding);
 		value = val;		
 	}
 

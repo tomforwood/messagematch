@@ -1,0 +1,4 @@
+{ 
+	"value1" : "$Int=myVar,7",
+	"value2" : "$>$myVar"
+}

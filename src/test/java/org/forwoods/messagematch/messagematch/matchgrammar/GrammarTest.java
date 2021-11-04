@@ -22,7 +22,8 @@ class GrammarTest {
 			"$Int=myInt",
 			"$^[\\\\^a-z]^=myString,a",
 			"$myInt",
-			"$>$myInt"})
+			"$>$myInt",
+			"$>$myVar2"})
 	void sucessTests(String toParse) {
 		MatcherLexer l = new MatcherLexer(CharStreams.fromString(toParse));
 		MatcherParser p = new MatcherParser(new CommonTokenStream(l));

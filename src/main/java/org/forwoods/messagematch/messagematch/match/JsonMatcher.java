@@ -3,6 +3,7 @@ package org.forwoods.messagematch.messagematch.match;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ public class JsonMatcher {
 	private JsonNode matcherNode;
 
 	private JsonNode concreteNode;
+	
+	private Map<String, String> bindings = new HashMap<>();
 	
 	public JsonMatcher(InputStream matcher, InputStream concrete) throws IOException {
 		matcherNode = mapper.readTree(matcher);
@@ -74,8 +77,14 @@ public class JsonMatcher {
 		String concrete = concreteNode.asText();
 		boolean matches = true;
 		if (matcher.startsWith("$")) {
-			FieldMatcher parseMatcher = parseMatcher(matcher);
-			matches = parseMatcher.matches(concrete);
+			try {
+				FieldMatcher parseMatcher = parseMatcher(matcher);
+				matches = parseMatcher.matches(concrete, bindings);
+			}
+			catch (UnboundVariableException e) {
+				errors.add(new MatchError(path, e.getVar() +" to be bound", "unbound"));
+				return false;
+			}
 		}
 		else if (matcher.startsWith("\\$")) {
 			matches = false;//TODO
@@ -90,7 +99,7 @@ public class JsonMatcher {
 		return matches;
 	}
 	
-	static FieldMatcher parseMatcher(String matcher) {
+	private FieldMatcher parseMatcher(String matcher) {
 		MatcherLexer l = new MatcherLexer(CharStreams.fromString(matcher));
 		MatcherParser p = new MatcherParser(new CommonTokenStream(l));
 		p.addErrorListener(new BaseErrorListener() {
@@ -99,7 +108,7 @@ public class JsonMatcher {
 	            throw new IllegalStateException("failed to parse at line " + line + " due to " + msg, e);
 	        }
 	    });
-		GrammarListenerMatcher listener = new GrammarListenerMatcher();
+		GrammarListenerMatcher listener = new GrammarListenerMatcher(bindings);
 		p.addParseListener(listener);
 		p.matcher();
 		return listener.result;

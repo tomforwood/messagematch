@@ -2,15 +2,16 @@ package org.forwoods.messagematch.messagematch.match;
 
 import java.util.regex.Pattern;
 
-public class RegExpMatcher implements FieldMatcher {
+public class RegExpMatcher extends FieldMatcher {
     private Pattern pattern;
 
-	public RegExpMatcher(String regExp) {
+	public RegExpMatcher(String regExp, String binding) {
+		super(binding);
     	this.pattern = Pattern.compile(regExp);
     }
 
 	@Override
-	public boolean matches(String value) {
+	public boolean doMatch(String value) {
 		return pattern.asMatchPredicate().test(value);
 	}
 }

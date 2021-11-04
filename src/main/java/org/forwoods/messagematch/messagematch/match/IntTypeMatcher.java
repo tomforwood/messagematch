@@ -1,14 +1,18 @@
 package org.forwoods.messagematch.messagematch.match;
 
-import java.math.BigInteger;
 import java.util.regex.Pattern;
 
-public class IntTypeMatcher implements FieldMatcher {
+public class IntTypeMatcher extends FieldMatcher {
 
-	Pattern intPattern = Pattern.compile("-?[0-9]*");
-	
+	final static Pattern intPattern = Pattern.compile("-?[0-9]*");
+	public IntTypeMatcher(String binding) {
+		super(binding);
+	}
+
+
 	@Override
-	public boolean matches(String value) {
+	boolean doMatch(String value) {
+		
 		return intPattern.asMatchPredicate().test(value);
 	}
 

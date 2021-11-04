@@ -2,6 +2,7 @@ package org.forwoods.messagematch.messagematch.generate;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -22,6 +23,8 @@ public class JsonGenerator {
 	static ObjectMapper mapper = new ObjectMapper();
 
 	private InputStream matcherFile;
+
+	private Map<String, NodeGenerator> bindings = new HashMap<>();
 
 	public JsonGenerator(InputStream matcherFile) {
 		this.matcherFile = matcherFile;
@@ -56,7 +59,7 @@ public class JsonGenerator {
 	private JsonNode generatePrimitive(ValueNode matcherNode) {
 		String matcher = matcherNode.asText();
 		if (matcher.startsWith("$")) {
-			return parseMatcher(matcher).generate();
+			return parseMatcher(matcher).generate(bindings );
 		}
 		if (matcher.startsWith("\\$")) {
 			//do basic but with substitution

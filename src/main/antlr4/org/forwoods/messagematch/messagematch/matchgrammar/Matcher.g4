@@ -21,13 +21,15 @@ matcher: DOLLAR (
 	typeMatcher | regexpMatcher | boundsMatcher | identifierMatcher
 ) ;
 
-typeMatcher : (INT|NUM|STRING) binding? genValue?;
+typeMatcher : type=(INT|NUM|STRING) binding? genValue?;
 
 regexpMatcher :  RE binding? genValue;
 
-boundsMatcher : (('<'|'<='|'>'|'>=') (NUMBER|variable) |
-				('+-' '(' (NUMBER|variable) ',' NUMBER ')'))  binding? genValue?;
+boundsMatcher : (op=('<'|'<='|'>'|'>=') val=numOrVar |
+				(op='+-' '(' val=numOrVar ',' eta=NUMBER ')'))  binding? genValue?;
 				
+numOrVar : (NUMBER|variable);
+
 identifierMatcher : IDENTIFIER;
 
 variable: DOLLAR IDENTIFIER;
