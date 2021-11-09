@@ -1,0 +1,8 @@
+{
+  "currentMS" : "$Int=Instant",
+  "currentTS" : "$Instant",
+  "currentDate" : "$Date",
+  "closingTime" : "$Time",
+  "location": "$String,here",
+  "score" : "$Num,9.5"
+}

@@ -4,10 +4,13 @@ grammar Matcher;
     package org.forwoods.messagematch.messagematch.matchgrammar;
 }
 
-DOLLAR:'$';
-INT:'Int';
-NUM:'Num';
-STRING:'String';
+INT:'$Int';
+NUM:'$Num';
+STRING:'$String';
+INSTANT:'$Instant';
+TIME:'$Time';
+DATE:'$Date';
+
 
 RE : '^'(RESC | RSAFE)* '^' ;
 
@@ -17,22 +20,22 @@ IDENTIFIER : [a-zA-Z][a-zA-z0-9]*;
 
 multMatcher: matcher (LineFeed matcher)*;
 
-matcher: DOLLAR (
+matcher: (
 	typeMatcher | regexpMatcher | boundsMatcher | identifierMatcher
 ) ;
 
-typeMatcher : type=(INT|NUM|STRING) binding? genValue?;
+typeMatcher : type=(INT|NUM|STRING|INSTANT|TIME|DATE) binding? genValue?;
 
-regexpMatcher :  RE binding? genValue;
+regexpMatcher :  '$' RE binding? genValue;
 
-boundsMatcher : (op=('<'|'<='|'>'|'>=') val=numOrVar |
+boundsMatcher : '$' (op=('<'|'<='|'>'|'>=') val=numOrVar |
 				(op='+-' '(' val=numOrVar ',' eta=NUMBER ')'))  binding? genValue?;
 				
 numOrVar : (NUMBER|variable);
 
-identifierMatcher : IDENTIFIER;
+identifierMatcher : variable;
 
-variable: DOLLAR IDENTIFIER;
+variable: '$' IDENTIFIER;
 
 genValue : ',' (REST+|NUMBER|IDENTIFIER) ;
 

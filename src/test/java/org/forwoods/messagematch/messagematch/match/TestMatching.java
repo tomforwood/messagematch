@@ -1,28 +1,21 @@
 package org.forwoods.messagematch.messagematch.match;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.stream.Stream;
 
-import org.forwoods.messagematch.messagematch.match.JsonMatcher;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.scanners.Scanners;
 
 class TestMatching {
 
 	static MatchingTest[] tests = new MatchingTest[] { 
 			new MatchingTest("int-type", "int-type", true),
+			new MatchingTest("types", "types", true),
 			new MatchingTest("int-type", "int-type-fail", false, "[Error at root:value expected matching $Int but was 1.0]"),
 			new MatchingTest("regexp-basic", "regexp-basic-pass", true),
 			new MatchingTest("regexp-basic", "regexp-basic-fail", false, "[Error at root:value expected matching $^[\\^0-9]*^,abc but was 0]"),
@@ -32,7 +25,12 @@ class TestMatching {
 			new MatchingTest("binding", "binding-fail", false, "[Error at root:value2 expected matching $>5=myVar but was 7]"),
 			new MatchingTest("binding-bounds", "binding-bounds-pass", true),
 			new MatchingTest("binding-bounds", "binding-bounds-fail", false, "[Error at root:value2 expected matching $>$myVar but was 6]"),
-			new MatchingTest("binding-unbound", "binding-bounds-pass", false, "[Error at root:value2 expected matching myVar2 to be bound but was unbound]")
+			new MatchingTest("binding-unbound", "binding-bounds-pass", false, "[Error at root:value2 expected matching myVar2 to be bound but was unbound]"),
+			new MatchingTest("time", "time", true),
+			new MatchingTest("time", "int-type", false, "[Error at root expected matching currentms but was not present]"),
+			new MatchingTest("strict", "binding-pass",false, "[Error at root expected matching no additional values but was [value2]]"),
+			new MatchingTest("array", "array", true),
+			new MatchingTest("wildkeys", "wildkeys", true)
 			};
 
 	@ParameterizedTest
@@ -47,10 +45,12 @@ class TestMatching {
 		if (min==null) throw new FileNotFoundException("cannot read matcher file "+matcher);
 		if (cin==null) throw new FileNotFoundException("cannot read concrete file "+concrete);
 		JsonMatcher jsonMatcher = new JsonMatcher(min, cin);
-		assertEquals(expected, jsonMatcher.matches());
-		if (r.error!=null) {
+		jsonMatcher.matchTime = 1636044195000L;
+		boolean matches = jsonMatcher.matches();
+		if (r.error!=null || !jsonMatcher.getErrors().isEmpty()) {
 			assertEquals(r.error, jsonMatcher.getErrors().toString());
 		}
+		assertEquals(expected, matches);
 	}
 
 	static Stream<MatchingTest> getFiles() {

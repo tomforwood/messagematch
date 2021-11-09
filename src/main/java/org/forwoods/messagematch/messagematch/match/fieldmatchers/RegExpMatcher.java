@@ -1,4 +1,4 @@
-package org.forwoods.messagematch.messagematch.match;
+package org.forwoods.messagematch.messagematch.match.fieldmatchers;
 
 import java.util.regex.Pattern;
 

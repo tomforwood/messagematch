@@ -1,4 +1,4 @@
-package org.forwoods.messagematch.messagematch.generate;
+package org.forwoods.messagematch.messagematch.generate.nodegenerators;
 
 import java.math.BigDecimal;
 

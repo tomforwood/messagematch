@@ -1,0 +1,5 @@
+{
+  "currentms" : "$Int=datetime",
+  "currentDate" : "$String=date",
+  "startTimems" : "$+-($datetime,1000)"
+}

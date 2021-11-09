@@ -1,4 +1,4 @@
-package org.forwoods.messagematch.messagematch.generate;
+package org.forwoods.messagematch.messagematch.generate.nodegenerators;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
