@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
@@ -74,12 +76,14 @@ public class JsonMatcher {
 		case NUMBER:
 			if (!(concreteNode instanceof ValueNode)) {
 				errors.add(new MatchError(path, "a value node", "A structural node"));
+				return false;
 			}
 			return matchPrimitive(path, (ValueNode)matcherNode, (ValueNode)concreteNode);
 			
 		case ARRAY:
 			if (!(concreteNode instanceof ArrayNode)) {
 				errors.add(new MatchError(path, "a value node", "A structural node"));
+				return false;
 			}
 			return matchArray(path, (ArrayNode)matcherNode,(ArrayNode) concreteNode);
 		case NULL:
@@ -87,6 +91,7 @@ public class JsonMatcher {
 		case OBJECT:
 			if (!(concreteNode instanceof ObjectNode)) {
 				errors.add(new MatchError(path, "a value node", "A structural node"));
+				return false;
 			}
 			return matchObject(path, (ObjectNode)matcherNode, (ObjectNode) concreteNode);
 		case POJO:
@@ -145,17 +150,86 @@ public class JsonMatcher {
 		}
 		return result;
 	}
+	
+	Pattern sizePattern = Pattern.compile("([0-9]*)-([0-9]*)");
 
 	private boolean matchArray(JsonPath path, ArrayNode matcherNode, ArrayNode concreteNode) {
 		int matcherSize = matcherNode.size();
 		int concreteSize = concreteNode.size();
+		
+		//special flags
+		boolean strict = false;
+		boolean unordered = false;
+		boolean each = false;
+		int min = 0;
+		int max = Integer.MAX_VALUE;
+		int offset = 0;
+		
+		if (matcherSize==0) {
+			if (concreteSize==0) return true;
+			else {
+				errors.add(new MatchError(path, "and empty array", "size "+concreteSize));
+			}
+		}
+		//look for the special matching node
+		JsonNode n=matcherNode.get(0);
+		if (n instanceof ObjectNode) {
+			ObjectNode on = (ObjectNode)n;
+			if (on.size()>0) {
+				if (on.fieldNames().next().startsWith("$")) {
+					//this is a "special" object
+					strict = on.has("$Strict");
+					unordered = on.has("$Unordered");
+					each = on.has("$Each");
+					JsonNode sizeNode = on.get("$Size");
+					if (sizeNode!=null) {
+						String bounds = sizeNode.asText();
+						Matcher m= sizePattern.matcher(bounds);
+						if (m.matches()) {
+							if (m.group(1).length()>0) {
+								min = Integer.parseInt(m.group(1));
+							}
+							if (m.group(2).length()>0) {
+								max = Integer.parseInt(m.group(2));
+							}
+						}
+						else {
+							errors.add(new MatchError(path, "size shoud be \"min-max\"", bounds));
+							return false;
+						}
+					}
+					offset = 1;
+				}
+			}
+		}
+
+		boolean matches= true;
+		
 		if (concreteSize < matcherSize) {
-			errors.add(new MatchError(path, "an array of size "+matcherSize, Integer.toString(concreteSize)));
+			errors.add(new MatchError(path, "an array of at least size "+matcherSize, Integer.toString(concreteSize)));
 			return false;
 		}
-		boolean matches= true;
-		for (int i=0;i<matcherSize;i++) {
-			JsonNode matcherChild = matcherNode.get(i);
+		
+		if (strict && concreteSize>matcherSize) {
+			errors.add(new MatchError(path, "an array of at exactly size "+matcherSize, Integer.toString(concreteSize)));
+			matches = false;
+		}
+		
+		if (concreteSize < min) {
+			errors.add(new MatchError(path, "an array of at least size "+min, Integer.toString(concreteSize)));
+		}
+		if (concreteSize >max) {
+			errors.add(new MatchError(path, "an array of at most size "+max, Integer.toString(concreteSize)));
+		}
+		
+		for (int i=0;i<matcherSize-offset;i++) {
+			JsonNode matcherChild;
+			if (each) {
+				matcherChild = matcherNode.get(offset);				
+			}
+			else {
+				matcherChild = matcherNode.get(i+ offset);
+			}
 			JsonNode concreteChild = concreteNode.get(i);
 			matches &= matches(new JsonPath("["+i+"]", path), matcherChild, concreteChild);
 		}
@@ -175,6 +249,28 @@ public class JsonMatcher {
 				if (key.equals("$Strict")) {
 					strictMode = true;
 					continue;//ignore this
+				}
+				if (key.equals("$Size")) {
+					String bounds = child.getValue().asText();
+					Matcher m= sizePattern.matcher(bounds);
+					if (m.matches()) {
+						if (m.group(1).length()>0) {
+							int min = Integer.parseInt(m.group(1));
+							if (concreteNode.size()>min) {
+								errors.add(new MatchError(path, "at least " + min + " keys", Integer.toString(concreteNode.size())));
+							}
+						}
+						if (m.group(2).length()>0) {
+							int max = Integer.parseInt(m.group(2));
+							if (concreteNode.size()<max) {
+								errors.add(new MatchError(path, "at most " + max + " keys", Integer.toString(concreteNode.size())));
+							}
+						}
+					}
+					else {
+						errors.add(new MatchError(path, "size shoud be \"min-max\"", bounds));
+						return false;
+					}
 				}
 				//interpret this node as a matcher
 				FieldMatcher matcher = parseMatcher(key);

@@ -30,7 +30,9 @@ class TestMatching {
 			new MatchingTest("time", "int-type", false, "[Error at root expected matching currentms but was not present]"),
 			new MatchingTest("strict", "binding-pass",false, "[Error at root expected matching no additional values but was [value2]]"),
 			new MatchingTest("array", "array", true),
-			new MatchingTest("wildkeys", "wildkeys", true)
+			new MatchingTest("wildkeys", "wildkeys", true),
+			new MatchingTest("array-basic", "array-basic", true),
+			new MatchingTest("array-size", "array", true),
 			};
 
 	@ParameterizedTest

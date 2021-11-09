@@ -107,11 +107,41 @@ TODO it would be nice to be able to define custom matchers
 By default the matching is forgiving of extra values. e.g. `{"value1":"$Int"}` as a matcher will match fine with `{"value1":5, "value2":6}` with the unexpected fields being simply ignored.
 
 #### "strict" mode
-If the first value in a json object matcher is the special value`{"$Strict":"true"}` then any value appearing in the concrete object that is not in the matcher is considered an error. E.g. `{"$Strict":"true", "value1":"$Int"}` will not match `{"value1":5, "value2":6}` but will match `{"value1":5}`
+If the special value`{"$Strict":"true"}` appears in a json object then any value appearing in the concrete object that is not in the matcher is considered an error. E.g. `{"$Strict":"true", "value1":"$Int"}` will not match `{"value1":5, "value2":6}` but will match `{"value1":5}`
+
+"$Strict":""false" still sets strict mode the boolean is ignored by the implementation
 
 #### map key mapping
-Where the keys are not know before runtime e.g. the serialization of a java map the same expressions can be applied to the keys. E.g. `{"$String":"abc"}` will match `{"value":"abc"}` 
+Where the keys are not know before runtime e.g. the serialization of a java map the same expressions can be applied to the keys. E.g. `{"$String":"abc"}` will match `{"value":"abc"}` Where the key expression matches more than one key appearing in concrete json the matching will be attempted against all matching keys. E.g.
+
+	{
+		"$^[A-Z]{3}^,GBP" : "$Int,1000"
+	}
+
+will match against each currency in 
+
+	{
+		"GBP" : 1000,
+		"USD" : 2000,
+		"EUR" : 3
+	}
 
 #### list (/map) value count
+The minimum and maximum number of values in an array or object can be specified with the special value `{"$size":"1-10"}` the values are inclusive and both the min and max are optional although one must be present e.g. "-10" means ten or fewer, "1-" means 1 or more.
 
-### unordered list
+#### arrays
+By default arrays are matched index by index with the first entry in the matcher array being matched against the first entry in the concrete array etc with additional entries in the concrete array being ignored.
+This behaviour can be changed by providing a special object as the first member of the array. The special object must declare some flags as its forst pairs. the special object will be discarded after its flags have been read. E.g.
+
+  [
+    { "$strict":"true"},
+    { "value":""$INT"}
+  ]
+  
+will match an array containing a single object containing a "value" key.
+
+The flags that can be set in the special object are
+ - "$Strict" : "true"  -enforce that only explicitly matched values are present
+ - "$Size" : "1-2" - enforce the min and max size of the array
+ - "$Each" : every node in the concrete json will be matched to the single matcher node supplied
+ - "$Unorderd" : "true" - allow the entries to come in a differnt order (not implemented)
