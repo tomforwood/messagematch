@@ -56,6 +56,9 @@ E.g.
  For the open comparators >  and < the value has 1 added or subtracted from it;
 
 #### binding
+
+//TODO cross message and runtime supplied bindings
+
 A value can be *bound* using *=name* to create constraints within a json document. E.g.
 
 	{ 
@@ -131,7 +134,7 @@ The minimum and maximum number of values in an array or object can be specified 
 
 #### arrays
 By default arrays are matched index by index with the first entry in the matcher array being matched against the first entry in the concrete array etc with additional entries in the concrete array being ignored.
-This behaviour can be changed by providing a special object as the first member of the array. The special object must declare some flags as its forst pairs. the special object will be discarded after its flags have been read. E.g.
+This behaviour can be changed by providing a special object as the first member of the array. The special object must declare some flags as its first pairs. the special object will be discarded after its flags have been read. E.g.
 
   [
     { "$strict":"true"},

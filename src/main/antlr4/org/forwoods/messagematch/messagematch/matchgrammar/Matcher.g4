@@ -1,7 +1,6 @@
 grammar Matcher;
 
 @header {
-    package org.forwoods.messagematch.messagematch.matchgrammar;
 }
 
 INT:'$Int';
