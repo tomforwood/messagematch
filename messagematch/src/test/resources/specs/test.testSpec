@@ -1,0 +1,10 @@
+callUnderTest:
+  channel:
+    "@type": uri
+    uri: /myService
+    method: post
+  requestMessage: {"data":"1"}
+  responseMessage: {"result":"$Int"}
+sideEffects:
+  - reference : "classpath:specs/sideEffect.callExample"
+  - relative : "sideEffect.callExample"

@@ -1,0 +1,6 @@
+{
+  "currentms" : "$Int=datetime",
+  "currentDate" : "$String=date",
+  "startTimes" : "$Instant+-($datetime,1000)",
+  "futureTime" : "$Instant++($datetime,1000)"
+}
