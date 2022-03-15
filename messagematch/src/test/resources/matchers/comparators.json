@@ -1,0 +1,6 @@
+{ 
+	"value" : "$Int>-1=myInt",
+	"val2" : "$Num>$myInt",
+	"val3" : "$Instant>$datetime",
+	"val4" : "$Num+-(5,2)"
+}

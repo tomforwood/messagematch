@@ -1,0 +1,2 @@
+callUnderTest:
+  reference: classpath:specs/sideEffect.callExample

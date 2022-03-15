@@ -1,0 +1,5 @@
+callUnderTest:
+  channel:
+    "@type": "uri"
+    uri: "/users"
+
