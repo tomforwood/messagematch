@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.forwoods.messagematch.generate.JsonGenerator;
 import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.MethodCallChannel;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 import org.mockito.stubbing.OngoingStubbing;
 
@@ -21,23 +22,27 @@ import static org.mockito.ArgumentMatchers.*;
 
 public class MockBehaviourBuilder extends BehaviourBuilder {
 
-    static ObjectMapper objectMapper = new ObjectMapper();
+    public static ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void addBehavior(Collection<CallExample> calls) {
         calls.stream().filter(c->c.getChannel() instanceof MethodCallChannel).forEach(c->{
                 MethodCallChannel channel = (MethodCallChannel) c.getChannel();
-                Class mockClass = getClass(channel.getClassName());
-                Object o =mocks.get(mockClass);
-                if (o==null) {
-                    throw new RuntimeException("No mock of class "+channel.getClassName()+"found");
-                }
-                addBehavior(mockClass, mockClass.cast(o), channel, c.getRequestMessage(), c.getResponseMessage());
+                Class<?> mockClass = getClass(channel.getClassName());
+            addBehaviour(c, channel, mockClass);
         });
     }
 
+    private <T> void addBehaviour(CallExample c, MethodCallChannel channel, Class<T> mockClass) {
+        Object o =mocks.get(mockClass);
+        if (o==null) {
+            throw new RuntimeException("No mock of class "+ channel.getClassName()+"found");
+        }
+        addBehavior(mockClass, mockClass.cast(o), channel, c.getRequestMessage(), c.getResponseMessage());
+    }
+
     private <T> void addBehavior(Class<T> mockClass, T mock, MethodCallChannel channel, JsonNode argumentValues, JsonNode response) {
-        Class[] paramsTypes = Arrays.stream(channel.getMethodArgs()).map(this::getClass).toArray(Class[]::new);
+        Class<?>[] paramsTypes = Arrays.stream(channel.getMethodArgs()).map(this::getClass).toArray(Class[]::new);
         try {
             Method m = mockClass.getMethod(channel.getMethodName(), paramsTypes);
             ArrayNode args = (ArrayNode) argumentValues;
@@ -52,8 +57,7 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
                 JsonNode generate = new JsonGenerator(response).generate();
                 Type t = m.getGenericReturnType();
                 JavaType jt = TypeFactory.defaultInstance().constructType(t);
-                Object res=objectMapper.treeToValue(generate, jt);
-                return res;
+                return objectMapper.treeToValue(generate, jt);
             });
 
 
@@ -61,33 +65,34 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
             throw new RuntimeException("Method "+channel.getMethodName()+"("+Arrays.toString(channel.getMethodArgs())
                     +") not found on "+channel.getClassName());
         } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("Error magic mocking Method "+channel.getMethodName()+"("+channel.getMethodArgs()
+            throw new RuntimeException("Error magic mocking Method "+channel.getMethodName()+"("+ Arrays.toString(channel.getMethodArgs())
                     +") not found on "+channel.getClassName());
         }
     }
 
-    private Object buildMatcher(Class paramsType, JsonNode jsonNode) {
-        MessageArgumentMatcher matcher = new MessageArgumentMatcher(jsonNode);
+    @SuppressWarnings("unchecked")
+    private Object buildMatcher(Class<?> paramsType, JsonNode jsonNode) {
+        MessageArgumentMatcher<?> matcher = new MessageArgumentMatcher<>(jsonNode);
         if (int.class.equals(paramsType)) {
-            return intThat(matcher);
+            return intThat((ArgumentMatcher<Integer>) matcher);
         }
         else if (byte.class.equals(paramsType)) {
-            return byteThat(matcher);
+            return byteThat((ArgumentMatcher<Byte>) matcher);
         }
         else if (short.class.equals(paramsType)) {
-            return shortThat(matcher);
+            return shortThat((ArgumentMatcher<Short>) matcher);
         }
         else if (long.class.equals(paramsType)) {
-            return longThat(matcher);
+            return longThat((ArgumentMatcher<Long>) matcher);
         }
         else if (float.class.equals(paramsType)) {
-            return floatThat(matcher);
+            return floatThat((ArgumentMatcher<Float>) matcher);
         }
         else if (double.class.equals(paramsType)) {
-            return doubleThat(matcher);
+            return doubleThat((ArgumentMatcher<Double>) matcher);
         }
         else if (boolean.class.equals(paramsType)) {
-            return booleanThat(matcher);
+            return booleanThat((ArgumentMatcher<Boolean>) matcher);
         }
         else {
             return argThat(matcher);

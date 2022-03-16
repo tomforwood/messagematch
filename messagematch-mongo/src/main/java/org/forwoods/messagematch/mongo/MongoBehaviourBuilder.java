@@ -1,26 +1,18 @@
 package org.forwoods.messagematch.mongo;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.mongodb.ServerAddress;
-import com.mongodb.ServerCursor;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.ReplaceOptions;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.forwoods.messagematch.junit.BehaviourBuilder;
 import org.forwoods.messagematch.junit.MessageArgumentMatcher;
 import org.forwoods.messagematch.spec.CallExample;
-import org.mockito.internal.stubbing.defaultanswers.ReturnsSmartNulls;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -28,92 +20,70 @@ import static org.mockito.Mockito.*;
 
 public class MongoBehaviourBuilder extends BehaviourBuilder {
 
-    ObjectMapper mapper = new ObjectMapper();
 
     @Override
+    @SuppressWarnings("unchecked")
     public void addBehavior(Collection<CallExample> calls) {
 
-        MongoCollection mongo = (MongoCollection) this.mocks.entrySet().stream()
+        MongoCollection<?> mongo = (MongoCollection<?>) this.mocks.entrySet().stream()
                 .filter(e->MongoCollection.class.isAssignableFrom(e.getKey()))
-                .map(e->e.getValue())
+                .map(Map.Entry::getValue)
                 .findFirst().orElseThrow(()->new RuntimeException("Mock implementing MongoCollection not found"));
         calls.stream().filter(c->c.getChannel() instanceof MongoChannel).forEach(c->{
             MongoChannel channel = (MongoChannel) c.getChannel();
             MongoMethod method = channel.getMethod();
             switch(method) {
                 case FIND:
-                    when(mongo.find(argThat(new MessageArgumentMatcher<Document>(c.getRequestMessage())), any(Class.class)))
-                            .thenAnswer(new Answer() {
+                    if (channel.getCollectionType()==null) {
+                        when(mongo.find(argThat(new MessageArgumentMatcher<Document>(c.getRequestMessage())), any(Class.class)))
+                                .thenAnswer(new MongoFindAnswerWithRuntimeClass<>(c.getResponseMessage()));
+                    } else {
+                        when(mongo.find(argThat(new MessageArgumentMatcher<Document>(c.getRequestMessage()))))
+                                .thenAnswer(new MongoFindAnswerWithCompileClass<>(c.getResponseMessage(), channel.getCollectionType()));
+                    }
+                    break;
+                case REPLACE:
 
-                                @Override
-                                public Object answer(InvocationOnMock invocation) throws Throwable {
-                                    Class returnClass = invocation.getArgument(1);
-                                    List<Document> list;
-                                    if (returnClass.equals(Document.class)) {
-                                        ArrayNode arr = (ArrayNode) c.getResponseMessage();
-                                        list = new ArrayList<>();
-                                        arr.forEach(d->list.add(Document.parse(d.toString())));
-                                    }
-                                    else{
-                                        JavaType t = TypeFactory.defaultInstance().constructCollectionLikeType(List.class, returnClass);
-                                        list =  mapper.treeToValue(c.getResponseMessage(), t);
-                                    }
-                                    FindIterable it = mock(FindIterable.class, new DefaultingAnswer());
-                                    MongoCursor cursor = new ListCursor(list);
-                                    when(it.iterator()).thenReturn(cursor);
-                                    when(it.projection(any())).thenReturn(it);
-                                    return it;
-                                }
-                            });
+                    when(mongo.replaceOne(argThat(new MessageArgumentMatcherBson<Bson>(c.getRequestMessage().get(0))),
+                            argThat(new MessageArgumentMatcher<>(c.getRequestMessage().get(1))),
+                            any(ReplaceOptions.class)))
+                            .thenAnswer(new MongoReplaceAnswer(c.getResponseMessage()));
+                    break;
+                default: throw new UnsupportedOperationException("Mongo operation not supported");
             }
         });
     }
 
-    private static  class ListCursor<T> implements MongoCursor<T> {
-        private Iterator<T> list;
+    private static class MongoFindAnswerWithRuntimeClass<T> extends MongoFindAnswer<T> {
 
-        public ListCursor(List<T> list) {
-            this.list = list.listIterator();
+        public MongoFindAnswerWithRuntimeClass(JsonNode responseMessage) {
+            super(responseMessage);
         }
 
         @Override
-        public void close() {
+        public FindIterable<T> answer(InvocationOnMock invocation) throws Throwable {
+            Class<T> returnClass = invocation.getArgument(1);
+            return getFindIterable(returnClass);
         }
 
-        @Override
-        public boolean hasNext() {
-            return list.hasNext();
-        }
-
-        @Override
-        public T next() {
-            return list.next();
-        }
-
-        @Override
-        public T tryNext() {
-            if (!hasNext()) return null;
-            return next();
-        }
-
-        @Override
-        public ServerCursor getServerCursor() {
-            return null;
-        }
-
-        @Override
-        public ServerAddress getServerAddress() {
-            return null;
-        }
     }
 
-    private static class DefaultingAnswer extends ReturnsSmartNulls {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-            if (invocation.getMethod().getReturnType().isAssignableFrom(invocation.getMock().getClass())) {
-                return invocation.getMock();
+    private static class MongoFindAnswerWithCompileClass<T> extends MongoFindAnswer<T> {
+        private final Class<T> returnClass;
+
+        public MongoFindAnswerWithCompileClass(JsonNode requestMessage, String collectionType) {
+            super(requestMessage);
+            try {
+                //noinspection unchecked
+                this.returnClass = (Class<T>)Class.forName(collectionType);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
-            return super.answer(invocation);
+        }
+
+        @Override
+        public FindIterable<T> answer(InvocationOnMock invocation) throws Throwable {
+            return getFindIterable(returnClass);
         }
     }
 }

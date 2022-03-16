@@ -13,8 +13,11 @@ public class MongoChannel implements Channel {
 
     @JsonProperty("mongoMethod")
     private MongoMethod mongoMethod;
+    @JsonProperty("collectionType")
+    private String collectionType;
 
     public MongoMethod getMethod() {
         return mongoMethod;
     }
+    public String getCollectionType() { return collectionType;}
 }
