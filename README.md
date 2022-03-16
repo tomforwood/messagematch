@@ -12,7 +12,11 @@ message match expresses a specification for a JSON formatted message. It is desi
 
 Messages can be used to write Event specifications which are used to create and share contracts between component - see [Event Spec](messagematch-junit/eventSpec.md)
 
+<<<<<<< HEAD
 There is also a maven pugin that attempts to verify the completeness of your event specification testing and verifying agains OpenApi swpecifications  - see [Maven plugin](messagematch-maven-plugin/README.md)
+=======
+There is also a maven pugin that attempts to verify the completeness of your event specification testing and verifying agains OpenApi swpecifications  - see [Maven plugin](message-match-maven-plugin/README.md)
+>>>>>>> refs/heads/multimodule
 
 In general it looks like a regular JSON message with some special matching keys/values as defined below. JSON in the spec that does not use any special matching is "basic" json. matching expressions always start with a $.
 

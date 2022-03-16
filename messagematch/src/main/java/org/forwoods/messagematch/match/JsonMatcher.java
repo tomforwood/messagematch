@@ -38,6 +38,10 @@ import com.fasterxml.jackson.databind.node.ValueNode;
 import static com.fasterxml.jackson.databind.node.JsonNodeType.MISSING;
 import static com.fasterxml.jackson.databind.node.JsonNodeType.NULL;
 
+/**
+ * @author Tom
+ *
+ */
 public class JsonMatcher {
     static ObjectMapper mapper = new ObjectMapper();
 

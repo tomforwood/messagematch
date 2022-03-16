@@ -25,7 +25,7 @@
         <dependency>
             <groupId>org.forwoods</groupId>
             <artifactId>messagematch</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
