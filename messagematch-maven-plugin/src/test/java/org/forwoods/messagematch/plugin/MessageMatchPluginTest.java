@@ -37,7 +37,9 @@ class MessageMatchPluginTest {
         plugin.setResourceDir(new File("src/test/resources"));
         plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
         plugin.execute();
-        verify(log).warn("src/test/resources/fails/fish.testSpec has not been checked with a test");
+        String content = "src/test/resources/fails/fish.testSpec has not been checked with a test"
+        		.replace('/',File.separatorChar);
+		verify(log).warn(content);
 
     }
 
