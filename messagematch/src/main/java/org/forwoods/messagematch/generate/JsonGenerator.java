@@ -30,6 +30,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 
+/**
+ * @author Tom
+ *
+ */
 public class JsonGenerator {
 	static ObjectMapper mapper = new ObjectMapper();
 

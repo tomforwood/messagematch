@@ -1,9 +1,15 @@
 package org.forwoods.messagematch.generate;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
-import org.forwoods.messagematch.generate.nodegenerators.*;
+import org.forwoods.messagematch.generate.nodegenerators.DateTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.InstantTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.IntTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.NodeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.NumberTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.StringTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.TimeTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.ValueProvider;
 import org.forwoods.messagematch.generate.nodegenerators.constraints.ComparatorConstraint;
 import org.forwoods.messagematch.generate.nodegenerators.constraints.ProvidedConstraint;
 import org.forwoods.messagematch.matchgrammar.MatcherBaseListener;
@@ -11,6 +17,10 @@ import org.forwoods.messagematch.matchgrammar.MatcherParser.GenValueContext;
 import org.forwoods.messagematch.matchgrammar.MatcherParser.RegexpMatcherContext;
 import org.forwoods.messagematch.matchgrammar.MatcherParser.TypeMatcherContext;
 
+/**
+ * @author Tom
+ *
+ */
 public class GrammarListenerGenerator extends MatcherBaseListener {
 
 	NodeGenerator result;
