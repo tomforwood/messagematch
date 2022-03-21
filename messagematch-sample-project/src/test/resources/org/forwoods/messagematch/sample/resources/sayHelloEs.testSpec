@@ -1,0 +1,16 @@
+callUnderTest:
+  channel:
+    "@type": uri
+    uri: /hello-world
+    method: get
+  requestMessage: { "language": "es" }#This test is broken - it hasn't provided a name, swagger integration should catch this
+  responseMessage: { "greeting": "Ola tom!" }
+  schema : "classpath:swagger.yaml"
+sideEffects:
+  - call:
+      channel :
+        "@type": mongo
+        mongoMethod : FIND
+        collectionType : org.forwoods.messagematch.sample.api.GreetingTemplate
+      requestMessage: {"language":"es"}
+      responseMessage : [{"greetingTemplate":"Ola %s!", "language":"fr"}]

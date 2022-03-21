@@ -1,16 +1,17 @@
 package org.forwoods.messagematch.junit;
 
 import org.forwoods.messagematch.spec.TestSpec;
+import org.forwoods.messagematch.util.ClasspathURLStreamHandlerProvider;
 import org.junit.jupiter.api.extension.*;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.mockito.Mockito;
 import org.mockito.listeners.MockCreationListener;
-import org.mockito.mock.MockCreationSettings;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -25,16 +26,15 @@ public class MessageSpecExtension implements ParameterResolver,
     Map<String, String> testFiles = new HashMap<>();
 
 
-    private Map<Class, Object> mocks = new HashMap<>();
+    private final Map<Class<?>, Object> mocks = new HashMap<>();
 
     @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
-        Mockito.framework().addListener(new MockCreationListener() {
-            @Override
-            public void onMockCreated(Object mock, MockCreationSettings settings) {
-                mocks.put(settings.getTypeToMock(), mock);
-            }
-        });
+    public void beforeAll(ExtensionContext context) {
+        try {
+            URL.setURLStreamHandlerFactory(new ClasspathURLStreamHandlerProvider());
+        }
+        catch (Error ignored){}
+        Mockito.framework().addListener((MockCreationListener) (mock, settings) -> mocks.put(settings.getTypeToMock(), mock));
     }
 
     @Override
@@ -73,9 +73,8 @@ public class MessageSpecExtension implements ParameterResolver,
 
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-        boolean annotated = parameterContext.isAnnotated(MessageSpec.class);
-        if (annotated) {
-            Optional<MessageSpec> findAnnotation = parameterContext.findAnnotation(MessageSpec.class);
+        Optional<MessageSpec> findAnnotation = parameterContext.findAnnotation(MessageSpec.class);
+        if (findAnnotation.isPresent()) {
             MessageSpec specAnnotation = findAnnotation.get();
             if (!Objects.equals(specAnnotation.value(), "")) {
                 String testId = extensionContext.getUniqueId();
@@ -91,9 +90,8 @@ public class MessageSpecExtension implements ParameterResolver,
         if (!f.exists()) {
             throw new ParameterResolutionException("Cannot find file with absolute path "+f.getAbsolutePath());
         }
-        TestSpec result = null;
         try {
-            result = TestSpec.specParser.readValue(f, TestSpec.class);
+            TestSpec result = TestSpec.specParser.readValue(f, TestSpec.class);
             result.resolve(f.toURI().toURL());
             return result;
         } catch (IOException e) {

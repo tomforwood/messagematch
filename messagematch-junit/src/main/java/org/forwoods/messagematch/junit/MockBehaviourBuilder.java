@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.forwoods.messagematch.generate.JsonGenerator;
 import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.MethodCallChannel;
+import org.forwoods.messagematch.spec.TriggeredCall;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 import org.mockito.stubbing.OngoingStubbing;
@@ -19,14 +20,15 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 public class MockBehaviourBuilder extends BehaviourBuilder {
 
     public static ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void addBehavior(Collection<CallExample> calls) {
-        calls.stream().filter(c->c.getChannel() instanceof MethodCallChannel).forEach(c->{
+    public void addBehavior(Collection<TriggeredCall> calls) {
+        calls.stream().map(TriggeredCall::getCall).filter(c->c.getChannel() instanceof MethodCallChannel).forEach(c->{
                 MethodCallChannel channel = (MethodCallChannel) c.getChannel();
                 Class<?> mockClass = getClass(channel.getClassName());
             addBehaviour(c, channel, mockClass);
@@ -45,13 +47,7 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
         Class<?>[] paramsTypes = Arrays.stream(channel.getMethodArgs()).map(this::getClass).toArray(Class[]::new);
         try {
             Method m = mockClass.getMethod(channel.getMethodName(), paramsTypes);
-            ArrayNode args = (ArrayNode) argumentValues;
-            Object[] paramMatchers = new Object[paramsTypes.length];
-            for (int i=0;i<paramsTypes.length;i++) {
-                paramMatchers[i] = buildMatcher(paramsTypes[i], args.get(i));
-            }
-            //Object[] p= StreamSupport.stream(args.spliterator(),false).map(n->intThat(new MessageArgumentMatcher(n))).toArray();
-            Object o = m.invoke(mock, paramMatchers);
+            Object o = invokeMethod(mock, (ArrayNode) argumentValues, paramsTypes, m);
             OngoingStubbing<Object> when = Mockito.when(o);
             when.thenAnswer(invocation -> {
                 JsonNode generate = new JsonGenerator(response).generate();
@@ -61,6 +57,46 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
             });
 
 
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("Method "+channel.getMethodName()+"("+Arrays.toString(channel.getMethodArgs())
+                    +") not found on "+channel.getClassName());
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException("Error magic mocking Method "+channel.getMethodName()+"("+ Arrays.toString(channel.getMethodArgs())
+                    +") not found on "+channel.getClassName());
+        }
+    }
+
+    private <T> Object invokeMethod(T mock, ArrayNode argumentValues, Class<?>[] paramsTypes, Method m) throws IllegalAccessException, InvocationTargetException {
+        Object[] paramMatchers = new Object[paramsTypes.length];
+        for (int i = 0; i< paramsTypes.length; i++) {
+            paramMatchers[i] = buildMatcher(paramsTypes[i], argumentValues.get(i));
+        }
+        return m.invoke(mock, paramMatchers);
+    }
+
+    @Override
+    public void verifyBehaviour(Collection<TriggeredCall> calls) {
+        calls.stream().filter(TriggeredCall::hasTimes).filter(c->c.getCall().getChannel() instanceof MethodCallChannel).forEach(c->{
+            MethodCallChannel channel = (MethodCallChannel) c.getCall().getChannel();
+            Class<?> mockClass = getClass(channel.getClassName());
+            verifyBehaviour(c.getCall(), channel, mockClass, c.getTimes());
+        });
+    }
+
+    private <T> void verifyBehaviour(CallExample c, MethodCallChannel channel, Class<T> mockClass, TriggeredCall.Times times) {
+        Object o =mocks.get(mockClass);
+        if (o==null) {
+            throw new RuntimeException("No mock of class "+ channel.getClassName()+"found");
+        }
+        verifyBehavior(mockClass, mockClass.cast(o), channel, c.getRequestMessage(), times);
+    }
+
+    private <T> void verifyBehavior(Class<T> mockClass, T mock, MethodCallChannel channel, JsonNode requestMessage, TriggeredCall.Times times) {
+        Class<?>[] paramsTypes = Arrays.stream(channel.getMethodArgs()).map(this::getClass).toArray(Class[]::new);
+        try {
+            Method method = mockClass.getMethod(channel.getMethodName(), paramsTypes);
+            T verify = verify(mock, toMockitoTimes(times));
+            invokeMethod(verify, (ArrayNode) requestMessage, paramsTypes, method);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Method "+channel.getMethodName()+"("+Arrays.toString(channel.getMethodArgs())
                     +") not found on "+channel.getClassName());

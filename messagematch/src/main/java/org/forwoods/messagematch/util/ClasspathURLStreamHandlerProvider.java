@@ -14,7 +14,11 @@ public class ClasspathURLStreamHandlerProvider extends URLStreamHandlerProvider 
             return new URLStreamHandler() {
                 @Override
                 protected URLConnection openConnection(URL u) throws IOException {
-                    return ClassLoader.getSystemClassLoader().getResource(u.getPath()).openConnection();
+                    URL resource = Thread.currentThread().getContextClassLoader().getResource(u.getPath());
+                    if (resource==null) {
+                        throw new RuntimeException("Could not read resource "+u);
+                    }
+                    return resource.openConnection();
                 }
             };
         }

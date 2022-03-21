@@ -85,7 +85,7 @@ public class CallExample {
         this.responseMessage = responseMessage;
     }
 
-    public void setVerifySchema(URL verifySchema) {
+    public void setSchema(URL verifySchema) {
         this.verifySchema = verifySchema;
     }
 }

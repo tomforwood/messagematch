@@ -13,7 +13,7 @@ class EventSpecTest {
         URL resource = getClass().getClassLoader().getResource("specs/test.testSpec");
         TestSpec parent = TestSpec.specParser.readValue(resource, TestSpec.class);
         parent.resolve(resource);
-        assertNotNull(parent.getSideEffects().get(0).getChannel());
-        assertEquals("post:/myOtherService",parent.getSideEffects().get(0).getChannel().toString());
+        assertNotNull(parent.getSideEffects().get(0).getCall().getChannel());
+        assertEquals("post:/myOtherService",parent.getSideEffects().get(0).getCall().getChannel().toString());
     }
 }

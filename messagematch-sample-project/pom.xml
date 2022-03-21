@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>messagematch-parent</artifactId>
+        <groupId>org.forwoods</groupId>
+        <version>0.0.4-SNAPSHOT</version>
+    </parent>
+    <artifactId>messagematch-sample-project</artifactId>
+    <version>0.0.4-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>messagematch-sample-project</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <dropwizard.version>2.0.28</dropwizard.version>
+        <mainClass>org.forwoods.messagematch.sample.messagematch-sample-projectApplication</mainClass>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.dropwizard</groupId>
+                <artifactId>dropwizard-dependencies</artifactId>
+                <version>${dropwizard.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>3.12.7</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.forwoods</groupId>
+            <artifactId>messagematch-mongo</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.test-framework</groupId>
+            <artifactId>jersey-test-framework-core</artifactId>
+            <version>2.35</version>
+            <scope>test</scope>
+        </dependency><dependency>
+            <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+            <artifactId>jersey-test-framework-provider-inmemory</artifactId>
+            <version>2.35</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-maven-plugin</artifactId>
+            <version>2.1.13</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>2.1.13</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>${basedir}/target/swagger</directory>
+            </testResource>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <plugins>
+            <plugin>
+                <groupId>io.openapitools.swagger</groupId>
+                <artifactId>swagger-maven-plugin</artifactId>
+                <configuration>
+                    <resourcePackages>
+                        <resourcePackage>org.forwoods.messagematch.sample</resourcePackage>
+                        <resourcePackage>org.forwoods.messagematch.sample.resources</resourcePackage>
+                    </resourcePackages>
+                    <outputDirectory>${basedir}/target/swagger</outputDirectory>
+                    <outputFilename>swagger</outputFilename>
+                    <outputFormats>JSON,YAML</outputFormats>
+                    <prettyPrint>true</prettyPrint>
+                    <swaggerConfig>
+                        <info>
+                            <title>Title</title>
+                            <version>${project.version}</version>
+                        </info>
+                    </swaggerConfig>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.forwoods</groupId>
+                <artifactId>messagematch-maven-plugin</artifactId>
+                <version>${project.version}</version>
+                <configuration>
+                    <timestampString>${maven.build.timestamp}</timestampString>
+                    <channelClasses>org.forwoods.messagematch.mongo.MongoChannel</channelClasses>
+                    <openApiFiles>
+                        <openApi>target/swagger/swagger.yaml</openApi>
+                    </openApiFiles>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>message-api-validate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

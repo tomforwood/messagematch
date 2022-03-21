@@ -21,8 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public abstract class MongoFindAnswer<T> implements Answer<FindIterable<T>> {
 
@@ -100,9 +99,9 @@ public abstract class MongoFindAnswer<T> implements Answer<FindIterable<T>> {
         @SuppressWarnings("unchecked")
         FindIterable<T> it = (FindIterable<T>)mock(FindIterable.class, new DefaultingAnswer());
         MongoCursor<T> cursor = new ListCursor<>(list);
-        when(it.iterator()).thenReturn(cursor);
-        when(it.projection(any())).thenReturn(it);
-        when(it.first()).thenReturn(cursor.tryNext());
+        lenient().when(it.iterator()).thenReturn(cursor);
+        lenient().when(it.projection(any())).thenReturn(it);
+        lenient().when(it.first()).thenAnswer(i->cursor.tryNext());
         return it;
     }
 }

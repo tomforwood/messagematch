@@ -16,11 +16,11 @@ public class TestSpec {
     public static final ObjectMapper specParser = new ObjectMapper(new YAMLFactory());
 
     CallExample callUnderTest;
-    private final List<CallExample> sideEffects;
+    private final List<TriggeredCall> sideEffects;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public TestSpec(@JsonProperty("callUnderTest")CallExample callUnderTest,
-                    @JsonProperty("sideEffects")List<CallExample> sideEffects) {
+                    @JsonProperty("sideEffects")List<TriggeredCall> sideEffects) {
         this.callUnderTest = callUnderTest;
         this.sideEffects = sideEffects==null?List.of():sideEffects;
     }
@@ -30,13 +30,13 @@ public class TestSpec {
         return callUnderTest;
     }
 
-    public List<CallExample> getSideEffects() {
+    public List<TriggeredCall> getSideEffects() {
         return sideEffects;
     }
 
     public TestSpec resolve(URL base) {
         callUnderTest.resolve(base);
-        sideEffects.forEach(s->s.resolve(base));
+        sideEffects.forEach(s->s.getCall().resolve(base));
         return this;
     }
 }

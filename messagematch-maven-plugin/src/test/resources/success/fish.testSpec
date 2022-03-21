@@ -1,5 +1,3 @@
 callUnderTest:
-  channel:
-    "@type": "uri"
-    uri: "/users"
+  relative: "getUsers.callExample"
 

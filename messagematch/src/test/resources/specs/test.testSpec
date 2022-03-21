@@ -6,5 +6,7 @@ callUnderTest:
   requestMessage: {"data":"1"}
   responseMessage: {"result":"$Int"}
 sideEffects:
-  - reference : "classpath:specs/sideEffect.callExample"
-  - relative : "sideEffect.callExample"
+  - call:
+      reference : "classpath:specs/sideEffect.callExample"
+  - call:
+      relative : "sideEffect.callExample"

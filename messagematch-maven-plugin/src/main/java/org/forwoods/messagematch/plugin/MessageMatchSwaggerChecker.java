@@ -2,19 +2,28 @@ package org.forwoods.messagematch.plugin;
 
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import org.apache.maven.plugin.logging.Log;
+import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.TestSpec;
+import org.forwoods.messagematch.spec.URIChannel;
 import org.springframework.web.util.UriTemplate;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class MessageMatchSwaggerChecker {
@@ -22,9 +31,11 @@ public class MessageMatchSwaggerChecker {
 
     protected void checkOpenApi(Collection<TestSpec> specPaths, Path openApiPath, Log log) {
         try {
-            List<String> specChannels = specPaths.stream()
-                    .filter(s->s!=null)
-                    .map(s->s.getCallUnderTest().getChannel().toString())
+            List<URIChannel> specChannels = specPaths.stream()
+                    .filter(Objects::nonNull)
+                    .map(s->s.getCallUnderTest().getChannel())
+                    .filter(s->s instanceof URIChannel)
+                    .map(URIChannel.class::cast)
                     .collect(Collectors.toList());
 
             String openApiString = Files.readString(openApiPath);
@@ -37,12 +48,20 @@ public class MessageMatchSwaggerChecker {
             if (openApi!=null) {
                 Paths apiPaths = openApi.getPaths();
                 for (Map.Entry<String, PathItem> pathEntry:apiPaths.entrySet()) {
-                    System.out.println(pathEntry.getKey());
                     UriTemplate template = new UriTemplate(pathEntry.getKey());
-                    boolean matched = specChannels.stream().map(c->template.match(c))
-                            .anyMatch(m->typeMatch(m, pathEntry.getValue()));
-                    if (!matched) {
-                        log.warn("API path of "+pathEntry.getKey()+ " does not match any tested channel");
+                    for(Map.Entry<PathItem.HttpMethod, Operation> operation: pathEntry.getValue().readOperationsMap().entrySet()) {
+                        boolean matched;
+                        List<URIChannel> uriMatches = specChannels.stream()
+                                .filter(c->template.matches(c.getUri()))
+                                .filter(c->c.getMethod().toUpperCase().equals(operation.getKey().toString()))
+                                .collect(Collectors.toList());
+
+                        matched = uriMatches.stream().map(c -> template.match(c.getUri()))
+                                .anyMatch(m -> typeMatch(m, operation.getValue().getParameters()));
+                        if (!matched) {
+                            log.warn("API path of "+operation.getKey()+":"+pathEntry.getKey()+ " does not match any tested channel");
+                        }
+
                     }
                 }
             }
@@ -50,10 +69,32 @@ public class MessageMatchSwaggerChecker {
             throw new RuntimeException(e);
         }
     }
+    public void checkOpenpi(CallExample call, Log log) {
+        URL u = call.getVerifySchema();
+        String s ;
+        try {
+            s = inputStreamToString(u.openStream());
+            SwaggerParseResult result = new OpenAPIParser().readContents(s, null, null);
+            if (result.getMessages()!=null) {
+                result.getMessages()
+                        .forEach(m->log.warn("Error reading openAPI, "+m));
+            }
+            //TODO
+        } catch (IOException e) {
+            log.error("Cannot access "+u);
+        }
+    }
 
-    private boolean typeMatch(Map<String, String> m, PathItem value) {
+    public static String inputStreamToString(InputStream is) throws IOException {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+            return br.lines().collect(Collectors.joining(System.lineSeparator()));
+        }
+    }
+
+    private boolean typeMatch(Map<String, String> m, List<Parameter> value) {
 
         //TODO check bindings match the schema
         return true;
     }
+
 }

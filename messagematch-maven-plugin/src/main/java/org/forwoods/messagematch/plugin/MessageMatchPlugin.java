@@ -1,32 +1,40 @@
 package org.forwoods.messagematch.plugin;
 
+import org.apache.maven.artifact.DependencyResolutionRequiredException;
+import org.apache.maven.model.FileSet;
+import org.apache.maven.model.Resource;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
 import org.forwoods.messagematch.junit.MessageSpecExtension;
 import org.forwoods.messagematch.spec.TestSpec;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.forwoods.messagematch.util.ClasspathURLStreamHandlerProvider;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.forwoods.messagematch.spec.TestSpec.TEST_SPEC;
 
-@Mojo(name = "message-api-validate", defaultPhase = LifecyclePhase.VERIFY)
+@Mojo(name = "message-api-validate", defaultPhase = LifecyclePhase.VERIFY, requiresDependencyResolution = ResolutionScope.TEST)
 public class MessageMatchPlugin extends AbstractMojo {
 
-    @Parameter(defaultValue = "${project.testResources[0].directory}", required = true, readonly = true)
-    File resourceDir;
+    @Parameter(defaultValue = "${project.testResources}", required = true, readonly = true)
+    List<Resource> resourceDirs;
 
     @Parameter(defaultValue = "${session.request.startTime}", readonly = true)
     private String timestampString;
@@ -34,32 +42,94 @@ public class MessageMatchPlugin extends AbstractMojo {
     @Parameter(readonly = true)
     private List<String> openApiFiles;
 
+    @Parameter(readonly = true)
+    private List<String> channelClasses;
+
+    @Parameter(defaultValue = "${project}", required = true, readonly = true)
+    private MavenProject project;
+
+    private ClassLoader buildClassPath() {
+        try {
+            Set<URL> urls = new HashSet<>();
+            @SuppressWarnings("unchecked")
+            List<String> elements = project.getTestClasspathElements();
+            //getRuntimeClasspathElements()
+            //getCompileClasspathElements()
+            //getSystemClasspathElements()
+            for (String element : elements) {
+                urls.add(new File(element).toURI().toURL());
+            }
+
+            return URLClassLoader.newInstance(
+                    urls.toArray(new URL[0]),
+                    Thread.currentThread().getContextClassLoader());
+
+
+        } catch (MalformedURLException | DependencyResolutionRequiredException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        Path resourcePath= resourceDir.toPath();
-        if (!Files.exists(resourcePath)) return;
+    public void execute() throws MojoExecutionException {
+
+        ClassLoader cl = buildClassPath();
+        Thread.currentThread().setContextClassLoader(cl);
+
+
+        if (channelClasses!=null) {
+            channelClasses.forEach(c->{try {
+                cl.loadClass(c);
+                Class.forName(c, true, cl);
+            } catch (ClassNotFoundException e) {
+                getLog().error(e);
+            }
+            });
+        }
+
+        try {
+            URL.setURLStreamHandlerFactory(new ClasspathURLStreamHandlerProvider());
+        }
+        catch (Error e){}
+        verifyMessageMatches();
+    }
+
+    protected void verifyMessageMatches() throws MojoExecutionException {
+        List<Path> resourcePaths= resourceDirs.stream().map(FileSet::getDirectory)
+                .map(Path::of)
+                .filter(Files::exists).collect(Collectors.toList());
         //System.out.println(timestampDate);
         Instant start = ZonedDateTime.parse(timestampString).toInstant();
         try {
-            Map<Path, Instant> lastRun = Files.walk(resourcePath).filter(p->p.toString().endsWith(TEST_SPEC))
-                    .collect(Collectors.toMap(p->p, p->getLastRunTime(p)));
-            lastRun.entrySet().stream().filter(e->e.getValue()==null || e.getValue().isBefore(start)).forEach(e->{
-                getLog().warn(e.getKey() +  " has not been checked with a test");
+            Map<Path, Instant> lastRun = new HashMap<>();
+            resourcePaths.forEach(f -> {
+                try {
+                    Map<Path, Instant> temp = Files.walk(f).filter(p -> p.toString().endsWith(TEST_SPEC))
+                            .collect(Collectors.toMap(p -> p, this::getLastRunTime));
+                    lastRun.putAll(temp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             });
+            lastRun.entrySet().stream().filter(e->e.getValue()==null || e.getValue().isBefore(start))
+                    .forEach(e-> getLog().warn(e.getKey() +  " has not been checked with a test"));
+
+
+            List<TestSpec> specs = lastRun.keySet().stream().map(this::readSpec).filter(Objects::nonNull).collect(Collectors.toList());
+            MessageMatchSwaggerChecker checker = new MessageMatchSwaggerChecker();
+            specs.stream().map(TestSpec::getCallUnderTest).filter(s->s.getVerifySchema()!=null).forEach(call->checker.checkOpenpi(call, getLog()));
 
             if (openApiFiles!=null && !openApiFiles.isEmpty()) {
-                List<TestSpec> specs = lastRun.keySet().stream().map(p->readSpec(p)).collect(Collectors.toList());
-                MessageMatchSwaggerChecker checker = new MessageMatchSwaggerChecker();
-                openApiFiles.stream().map(f->Path.of(f)).forEach(f->checker.checkOpenApi(specs, f, getLog()));
+                openApiFiles.stream().map(Path::of).forEach(f->checker.checkOpenApi(specs, f, getLog()));
             }
 
 
         }
-        catch (IOException|RuntimeException e) {
+        catch (RuntimeException e) {
             throw new MojoExecutionException(e);
         }
     }
-
 
 
     private TestSpec readSpec(Path p) {
@@ -69,6 +139,7 @@ public class MessageMatchPlugin extends AbstractMojo {
             return testSpec;
         }
         catch (IOException e) {
+            System.out.println(System.getProperty("java.version"));
             return null;
         }
     }
@@ -88,8 +159,8 @@ public class MessageMatchPlugin extends AbstractMojo {
         }
     }
 
-    public void setResourceDir(File baseDir) {
-        this.resourceDir = baseDir;
+    public void setResourceDirs(List<Resource> baseDirs) {
+        this.resourceDirs = baseDirs;
     }
 
     public void setTimestampString(String timestampString) {
@@ -98,5 +169,13 @@ public class MessageMatchPlugin extends AbstractMojo {
 
     public void setOpenApiFiles(List<String> openApiFiles) {
         this.openApiFiles = openApiFiles;
+    }
+
+    public void setChannelClasses(List<String> channelClasses) {
+        this.channelClasses = channelClasses;
+    }
+
+    public void setProject(MavenProject project) {
+        this.project = project;
     }
 }

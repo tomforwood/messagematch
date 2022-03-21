@@ -9,7 +9,9 @@ import org.bson.conversions.Bson;
 import org.forwoods.messagematch.junit.BehaviourBuilder;
 import org.forwoods.messagematch.junit.MessageArgumentMatcher;
 import org.forwoods.messagematch.spec.CallExample;
+import org.forwoods.messagematch.spec.TriggeredCall;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.verification.VerificationMode;
 
 import java.util.Collection;
 import java.util.Map;
@@ -23,13 +25,10 @@ public class MongoBehaviourBuilder extends BehaviourBuilder {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void addBehavior(Collection<CallExample> calls) {
+    public void addBehavior(Collection<TriggeredCall> calls) {
 
-        MongoCollection<?> mongo = (MongoCollection<?>) this.mocks.entrySet().stream()
-                .filter(e->MongoCollection.class.isAssignableFrom(e.getKey()))
-                .map(Map.Entry::getValue)
-                .findFirst().orElseThrow(()->new RuntimeException("Mock implementing MongoCollection not found"));
-        calls.stream().filter(c->c.getChannel() instanceof MongoChannel).forEach(c->{
+        MongoCollection<?> mongo = getMongoCollection();
+        calls.stream().map(TriggeredCall::getCall).filter(c->c.getChannel() instanceof MongoChannel).forEach(c->{
             MongoChannel channel = (MongoChannel) c.getChannel();
             MongoMethod method = channel.getMethod();
             switch(method) {
@@ -48,6 +47,40 @@ public class MongoBehaviourBuilder extends BehaviourBuilder {
                             argThat(new MessageArgumentMatcher<>(c.getRequestMessage().get(1))),
                             any(ReplaceOptions.class)))
                             .thenAnswer(new MongoReplaceAnswer(c.getResponseMessage()));
+                    break;
+                default: throw new UnsupportedOperationException("Mongo operation not supported");
+            }
+        });
+    }
+
+    private MongoCollection<?> getMongoCollection() {
+        return (MongoCollection<?>) this.mocks.entrySet().stream()
+                .filter(e->MongoCollection.class.isAssignableFrom(e.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst().orElseThrow(()->new RuntimeException("Mock implementing MongoCollection not found"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void verifyBehaviour(Collection<TriggeredCall> calls) {
+        MongoCollection<?> mongo = getMongoCollection();
+        calls.stream().filter(TriggeredCall::hasTimes).filter(c->c.getCall().getChannel() instanceof MongoChannel).forEach(c->{
+            CallExample call = c.getCall();
+            MongoChannel channel = (MongoChannel) call.getChannel();
+            MongoMethod method = channel.getMethod();
+            VerificationMode mockitoTimes = toMockitoTimes(c.getTimes());
+            switch(method) {
+                case FIND:
+                    if (channel.getCollectionType()==null) {
+                        verify(mongo, mockitoTimes).find(argThat(new MessageArgumentMatcher<Document>(call.getRequestMessage())), any(Class.class));
+                    } else {
+                        verify(mongo, mockitoTimes).find(argThat(new MessageArgumentMatcher<Document>(call.getRequestMessage())));
+                    }
+                    break;
+                case REPLACE:
+                    verify(mongo, mockitoTimes).replaceOne(argThat(new MessageArgumentMatcherBson<Bson>(call.getRequestMessage().get(0))),
+                            argThat(new MessageArgumentMatcher<>(call.getRequestMessage().get(1))),
+                            any(ReplaceOptions.class));
                     break;
                 default: throw new UnsupportedOperationException("Mongo operation not supported");
             }

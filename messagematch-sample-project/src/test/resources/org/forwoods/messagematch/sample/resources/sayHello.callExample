@@ -1,0 +1,6 @@
+channel:
+  "@type": uri
+  uri: /hello-world
+  method: get
+requestMessage: {"name":"tom", "language":"fr"}
+responseMessage: {"greeting":"Bonjour tom!"}
