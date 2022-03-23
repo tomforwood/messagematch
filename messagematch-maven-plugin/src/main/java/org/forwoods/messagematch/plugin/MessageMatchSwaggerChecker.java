@@ -1,7 +1,7 @@
 package org.forwoods.messagematch.plugin;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.util.Json;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -120,14 +120,21 @@ public class MessageMatchSwaggerChecker {
                     //Now check the query params
                     List<Parameter> params = op.getParameters();
                     if (params!=null && params.size()>0) {
-                        if (!(call.getRequestMessage() instanceof ArrayNode)) {
-                            log.debug(channel.getUri() + " query params weren't supplied as an array of values");
+                        if (!(call.getRequestMessage() instanceof ObjectNode)) {
+                            log.debug(channel.getUri() + " query params weren't supplied as an map of values");
                             continue;//if call asks for params they must be in the form of an array
                         }
                         boolean allMatch = true;
-                        ArrayNode arrNode = (ArrayNode) call.getRequestMessage();
-                        for (int i=0;i<params.size();i++) {
-                            allMatch &= new SchemaValidator(params.get(i).getSchema()).validate(arrNode.get(i));
+                        ObjectNode arrNode = (ObjectNode) call.getRequestMessage();
+                        for (Parameter parameter : params) {
+                            JsonNode paramVal = arrNode.get(parameter.getName());
+                            if (paramVal == null && parameter.getRequired()) {
+                                allMatch = false;
+                                log.debug(channel.getUri() + " did not supply a value for the required parameter " + Json.pretty(parameter));
+                            }
+                            else if (paramVal!=null) {
+                                allMatch &= new SchemaValidator(parameter.getSchema()).validate(paramVal);
+                            }
                         }
                         if (!allMatch) {
                             log.debug(channel.getUri() + "query params of "+ call.getRequestMessage().toString() + " did not match schema params of "+ Json.pretty(params));
