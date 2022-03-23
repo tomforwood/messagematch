@@ -35,9 +35,11 @@ Finally, the verifyBehaviour on the BehaviourBuilders can be called ot verify th
 ##Contract testing
 The standard way to create a call spec is to have the call under test in a separate file (normally ending callExample) imported into a test spec. For the side effect calls: calls to services you don't control e.g. databases etc. can be specified inline or as relative links for re-use. Calls to services you control are expected to be classpath links to a callExample used in the service being called. By loading the behaviour for your mocks directly from tests of the mocked service you can guarantee data level compatibility between different services.
 
+The standard way to pull in resources created in another project (schema files, call examples) is by putting them on the classpath. Option 1: as standard maven dependencies e.g. depending on test-jar of a dto module of the other project. Option 2: If you don't want the coupling between your two services to be explicit then the required files can be brought in using the maven-dependency-plugin unpack goal as demonstrated in the sample2 project.
+
 ##Maven plugin
 
-The maven pugin that attempts to verify the completeness of your event specification testing and verifying agains OpenApi specifications. It ensures that every testSpec in the project has been used by at least one unit test **TODO it should be call example not testSpec** thus ensuring there are no stale tests in your code that might unwittingly be relied upon by consumers of your service
+The maven pugin that attempts to verify the completeness of your event specification testing and verifying agains OpenApi specifications. It ensures that every testSpec in the project has been used by at least one unit test thus ensuring there are no stale tests in your code that might unwittingly be relied upon by consumers of your service
 
 It also checks that every endpoint defined in your openapi specification has at least one test spec that covers it. finally it ensures that any calls that reference external openapi specifications do in fact match that specification
 

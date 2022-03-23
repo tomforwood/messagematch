@@ -119,16 +119,9 @@
                                     <type>test-jar</type>
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
-<!--                                    <destFileName>optional-new-name.jar</destFileName>-->
                                     <includes>**/*.callExample,**/sample-swagger.yaml</includes>
-<!--                                    <excludes>**/*test.class</excludes>-->
                                 </artifactItem>
                             </artifactItems>
-<!--                            <includes>**/*.java</includes>-->
-<!--                            <excludes>**/*.properties</excludes>-->
-<!--                            <outputDirectory>${project.build.directory}/wars</outputDirectory>-->
-<!--                            <overWriteReleases>false</overWriteReleases>-->
-<!--                            <overWriteSnapshots>true</overWriteSnapshots>-->
                         </configuration>
                     </execution>
                 </executions>
