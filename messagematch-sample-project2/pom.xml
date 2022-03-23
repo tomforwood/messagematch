@@ -6,11 +6,10 @@
     <parent>
     <artifactId>messagematch-parent</artifactId>
     <groupId>org.forwoods</groupId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.5-SNAPSHOT</version>
   </parent>
 
     <artifactId>messagematch-sample-project2</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>messagematch-sampleproject2</name>
