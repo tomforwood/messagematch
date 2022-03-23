@@ -40,116 +40,99 @@
             <artifactId>dropwizard-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>3.12.7</version>
         </dependency>
         <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.13</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.forwoods</groupId>
+            <artifactId>messagematch-mongo</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
+            <groupId>org.forwoods</groupId>
+            <artifactId>messagematch-apachehttp</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.test-framework</groupId>
+            <artifactId>jersey-test-framework-core</artifactId>
+            <version>2.35</version>
+            <scope>test</scope>
+        </dependency><dependency>
+        <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+        <artifactId>jersey-test-framework-provider-inmemory</artifactId>
+        <version>2.35</version>
+        <scope>test</scope>
+    </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <groupId>org.forwoods</groupId>
+                <artifactId>messagematch-maven-plugin</artifactId>
+                <version>${project.version}</version>
                 <configuration>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
-                    <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>${mainClass}</mainClass>
-                        </transformer>
-                    </transformers>
-                    <!-- exclude signed Manifests -->
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
+                    <timestampString>${maven.build.timestamp}</timestampString>
+                    <channelClasses>org.forwoods.messagematch.mongo.MongoChannel</channelClasses>
                 </configuration>
                 <executions>
                     <execution>
-                        <phase>package</phase>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>message-api-validate</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>${mainClass}</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
-            </plugin>
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>attach-sources</id>
+                        <id>unpack</id>
+                        <phase>generate-resources</phase>
                         <goals>
-                            <goal>jar</goal>
+                            <goal>unpack</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.3.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.forwoods</groupId>
+                                    <artifactId>messagematch-sample-project</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>test-jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+<!--                                    <destFileName>optional-new-name.jar</destFileName>-->
+                                    <includes>**/*.callExample,**/sample-swagger.yaml</includes>
+<!--                                    <excludes>**/*test.class</excludes>-->
+                                </artifactItem>
+                            </artifactItems>
+<!--                            <includes>**/*.java</includes>-->
+<!--                            <excludes>**/*.properties</excludes>-->
+<!--                            <outputDirectory>${project.build.directory}/wars</outputDirectory>-->
+<!--                            <overWriteReleases>false</overWriteReleases>-->
+<!--                            <overWriteSnapshots>true</overWriteSnapshots>-->
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>java11+</id>
-            <activation>
-                <jdk>[11,)</jdk>
-            </activation>
-            <properties>
-                <!--
-                Workaround for "javadoc: error - The code being documented uses modules but the packages
-                defined in https://docs.oracle.com/javase/8/docs/api/ are in the unnamed module."
-                -->
-                <maven.javadoc.skip>true</maven.javadoc.skip>
-            </properties>
-        </profile>
-    </profiles>
 </project>

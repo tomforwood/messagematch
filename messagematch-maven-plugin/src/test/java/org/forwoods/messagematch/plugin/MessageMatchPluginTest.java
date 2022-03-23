@@ -38,7 +38,7 @@ class MessageMatchPluginTest {
     @Test
     public void testSpecsMissed() throws MojoExecutionException {
         Resource res = new Resource();
-        res.setDirectory("src/test/resources");
+        res.setDirectory("src/test/resources/fails");
         plugin.setResourceDirs(List.of(res));
         plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
         plugin.verifyMessageMatches();
@@ -70,6 +70,18 @@ class MessageMatchPluginTest {
         plugin.verifyMessageMatches();
         verify(log).warn("API path of GET:/users does not match any tested channel");
         verify(log).warn("API path of GET:/user/{userId} does not match any tested channel");
+    }
+
+    @Test
+    public void testSwaggerAPIMismatch() throws MojoExecutionException {
+        Resource res = new Resource();
+        res.setDirectory("src/test/resources/mismatch");
+        plugin.setResourceDirs(List.of(res));
+        plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
+
+        plugin.verifyMessageMatches();
+        verify(log).error("call with channel get:/user/abc and request body null did not match anything in the specified schema classpath:mismatch/testApi.json see debug for things it nearly matched with");
+        verify(log).error("call with channel get:/user/123 and request body null did not match anything in the specified schema classpath:mismatch/testApi.json see debug for things it nearly matched with");
     }
 
 }

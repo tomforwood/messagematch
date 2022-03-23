@@ -12,7 +12,7 @@ class EventSpecTest {
     public void specResolveTest() throws IOException {
         URL resource = getClass().getClassLoader().getResource("specs/test.testSpec");
         TestSpec parent = TestSpec.specParser.readValue(resource, TestSpec.class);
-        parent.resolve(resource);
+        parent = parent.resolve(resource);
         assertNotNull(parent.getSideEffects().get(0).getCall().getChannel());
         assertEquals("post:/myOtherService",parent.getSideEffects().get(0).getCall().getChannel().toString());
     }

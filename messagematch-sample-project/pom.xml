@@ -99,7 +99,7 @@
                         <resourcePackage>org.forwoods.messagematch.sample.resources</resourcePackage>
                     </resourcePackages>
                     <outputDirectory>${basedir}/target/swagger</outputDirectory>
-                    <outputFilename>swagger</outputFilename>
+                    <outputFilename>sample-swagger</outputFilename>
                     <outputFormats>JSON,YAML</outputFormats>
                     <prettyPrint>true</prettyPrint>
                     <swaggerConfig>
@@ -125,13 +125,25 @@
                     <timestampString>${maven.build.timestamp}</timestampString>
                     <channelClasses>org.forwoods.messagematch.mongo.MongoChannel</channelClasses>
                     <openApiFiles>
-                        <openApi>target/swagger/swagger.yaml</openApi>
+                        <openApi>target/swagger/sample-swagger.yaml</openApi>
                     </openApiFiles>
                 </configuration>
                 <executions>
                     <execution>
                         <goals>
                             <goal>message-api-validate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
                         </goals>
                     </execution>
                 </executions>

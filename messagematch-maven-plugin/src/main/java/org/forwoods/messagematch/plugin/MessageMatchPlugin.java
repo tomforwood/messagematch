@@ -12,6 +12,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.forwoods.messagematch.spec.TriggeredCall;
 import org.forwoods.messagematch.util.ClasspathURLStreamHandlerProvider;
 
 import java.io.File;
@@ -91,7 +92,10 @@ public class MessageMatchPlugin extends AbstractMojo {
         try {
             URL.setURLStreamHandlerFactory(new ClasspathURLStreamHandlerProvider());
         }
-        catch (Error e){}
+        catch (Error ignored){
+            getLog().info("Error adding classpath URL handler - it may have been previously added. " +
+                    "If there is an error about resolving later this could be the cause");
+        }
         verifyMessageMatches();
     }
 
@@ -117,11 +121,12 @@ public class MessageMatchPlugin extends AbstractMojo {
 
 
             List<TestSpec> specs = lastRun.keySet().stream().map(this::readSpec).filter(Objects::nonNull).collect(Collectors.toList());
-            MessageMatchSwaggerChecker checker = new MessageMatchSwaggerChecker();
-            specs.stream().map(TestSpec::getCallUnderTest).filter(s->s.getVerifySchema()!=null).forEach(call->checker.checkOpenpi(call, getLog()));
+            MessageMatchSwaggerChecker checker = new MessageMatchSwaggerChecker(getLog());
+            specs.stream().flatMap(c->Stream.concat(Stream.of(c.getCallUnderTest()),c.getSideEffects().stream().map(TriggeredCall::getCall)))
+                    .filter(s->s.getVerifySchema()!=null).forEach(call->checker.checkOpenpi(call, getLog()));
 
             if (openApiFiles!=null && !openApiFiles.isEmpty()) {
-                openApiFiles.stream().map(Path::of).forEach(f->checker.checkOpenApi(specs, f, getLog()));
+                openApiFiles.stream().map(Path::of).forEach(f->checker.checkOpenApi(specs, f));
             }
 
 
@@ -139,7 +144,6 @@ public class MessageMatchPlugin extends AbstractMojo {
             return testSpec;
         }
         catch (IOException e) {
-            System.out.println(System.getProperty("java.version"));
             return null;
         }
     }

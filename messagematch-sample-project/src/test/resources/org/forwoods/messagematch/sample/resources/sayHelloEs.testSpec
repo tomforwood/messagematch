@@ -5,7 +5,7 @@ callUnderTest:
     method: get
   requestMessage: { "language": "es" }#This test is broken - it hasn't provided a name, swagger integration should catch this
   responseMessage: { "greeting": "Ola tom!" }
-  schema : "classpath:swagger.yaml"
+  schema : "classpath:sample-swagger.yaml"
 sideEffects:
   - call:
       channel :

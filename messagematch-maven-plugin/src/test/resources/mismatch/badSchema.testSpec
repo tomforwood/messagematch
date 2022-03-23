@@ -1,0 +1,8 @@
+callUnderTest:
+  channel:
+    "@type": "uri"
+    uri: "/user/123"
+    method: "get"
+  responseMessage: [{"id":"123", "pame":"Boris"}]
+  schema: "classpath:mismatch/testApi.json"
+

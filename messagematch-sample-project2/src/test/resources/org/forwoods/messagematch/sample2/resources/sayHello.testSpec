@@ -1,0 +1,12 @@
+callUnderTest:
+  reference : "classpath:org/forwoods/messagematch/sample2/resources/sayHello.callExample"
+sideEffects:
+  - call:
+      channel :
+        "@type": mongo
+        mongoMethod : FIND
+        collectionType : org.forwoods.messagematch.sample2.api.StudentDetails
+      requestMessage: {"id":"123"}
+      responseMessage : [{"name":"tom", "language":"fr"}]
+  - call:
+      reference: "classpath:org/forwoods/messagematch/sample/resources/sayHello.callExample" #references the call from the other project

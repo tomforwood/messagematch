@@ -12,6 +12,7 @@ import org.forwoods.messagematch.sample.api.GreetingTemplate;
 import org.forwoods.messagematch.sample.db.GreetingDAO;
 import org.forwoods.messagematch.sample.service.GreetingService;
 import org.forwoods.messagematch.spec.TestSpec;
+import org.forwoods.messagematch.spec.URIChannel;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.junit.jupiter.api.BeforeAll;
@@ -61,7 +62,8 @@ public class HelloWorldTest extends JerseyTest {
     public void testHello(@MessageSpec("src/test/resources/org/forwoods/messagematch/sample/resources/sayHello") TestSpec event) throws IOException {
         mongo.addMocks(Map.of(MongoCollection.class, collection));
         mongo.addBehavior(event.getSideEffects());
-        WebTarget target = target("/hello-world");
+        URIChannel channel = (URIChannel) event.getCallUnderTest().getChannel();
+        WebTarget target = target(channel.getUri());
         target = addParams(target, event.getCallUnderTest().getRequestMessage());
         Response response = target.request()
                 .get();

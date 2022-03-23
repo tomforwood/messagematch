@@ -9,6 +9,7 @@
     <module>messagematch</module>
     <module>messagematch-maven-plugin</module>
     <module>messagematch-mongo</module>
+      <module>messagematch-apachehttp</module>
   </modules>
 
   <packaging>pom</packaging>

@@ -1,0 +1,18 @@
+callUnderTest:
+  channel:
+    "@type": uri
+    uri: /student/saveTranslation
+    method: post
+  requestMessage: { "language": "es", "greebingTemplate":"ola {}!" }
+  responseMessage: { "language": "es", "greebingTemplate":"ola {}!" }
+sideEffects:
+  - times:
+      min: 1
+    call:
+      channel:
+        "@type": uri
+        uri: /hello-world/saveTranslation
+        method: post
+      requestMessage: { "language": "es", "greebingTemplate": "ola {}!" }
+      responseMessage: { "language": "es", "greebingTemplate": "ola {}!" }
+      schema: "classpath:sample-swagger.yaml"

@@ -1,0 +1,6 @@
+channel:
+  "@type": uri
+  uri: /student/getGreeting
+  method: get
+requestMessage: {"userId":"123"}
+responseMessage: "Bonjour tom!"

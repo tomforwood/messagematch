@@ -14,12 +14,11 @@ import org.forwoods.messagematch.matchgrammar.MatcherParser.TypeMatcherContext;
 
 public class GrammarListenerMatcher extends MatcherBaseListener {
 
-	FieldMatcher result;
-	private final Map<String, Object> bindings;
+	FieldMatcher<?> result;
+
 
 	public GrammarListenerMatcher(Map<String, Object> bindings) {
 		super();
-		this.bindings = bindings;
 	}
 
 	@Override
@@ -61,30 +60,6 @@ public class GrammarListenerMatcher extends MatcherBaseListener {
 		regexp = regexp.replaceAll("\\\\\\^", "^");// and unescape
 		result = new RegExpMatcher(regexp, binding, false, null);
 	}
-
-	/*@Override
-	public void exitBoundsMatcher(BoundsMatcherContext ctx) {
-		String operator = ctx.op.getText();
-		String binding = ctx.binding() == null ? null : ctx.binding().IDENTIFIER().getText();
-
-		BigDecimal value = null;
-		NumOrVarContext val = ctx.val;
-		if (val.NUMBER() != null) {
-			value = trans(val.NUMBER().getText());
-		} else {
-			String var = val.variable().IDENTIFIER().getText();
-			value = trans(bindings.get(var));
-			if (value == null)
-				throw new UnboundVariableException(var);
-		}
-		if (operator.equals("+-") || operator.equals("++")) {
-			String eta = ctx.eta.getText();
-			BigDecimal x = new BigDecimal(eta);
-			result = new DecimalBoundsMatcher(operator, value, x, binding);
-		} else {
-			result = new DecimalBoundsMatcher(operator, value, null, binding);
-		}
-	}*/
 
 	public static BigDecimal trans(Object object) {
 		if (object instanceof BigDecimal) {

@@ -6,11 +6,9 @@ import java.util.regex.Pattern;
 public class IntTypeMatcher extends FieldMatcher<BigInteger> {
 
 	final static Pattern intPattern = Pattern.compile("-?[0-9]+");
-	private FieldComparatorMatcher comparator;
 
 	public IntTypeMatcher(String binding, boolean nullable, FieldComparatorMatcher comparator) {
 		super(binding, nullable, comparator);
-		this.comparator = comparator;
 	}
 
 	@Override
@@ -21,8 +19,11 @@ public class IntTypeMatcher extends FieldMatcher<BigInteger> {
 
 	@Override
 	boolean doMatch(String value) {
-		boolean test = intPattern.asMatchPredicate().test(value);
-		return test;
+		return isInt(value);
+	}
+
+	public static boolean isInt(String value) {
+		return intPattern.asMatchPredicate().test(value);
 	}
 
 	@Override

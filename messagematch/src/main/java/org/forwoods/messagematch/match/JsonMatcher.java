@@ -45,13 +45,13 @@ import static com.fasterxml.jackson.databind.node.JsonNodeType.NULL;
 public class JsonMatcher {
     static ObjectMapper mapper = new ObjectMapper();
 
-    private List<MatchError> errors = new ArrayList<>();
+    private final List<MatchError> errors = new ArrayList<>();
 
-    private JsonNode matcherNode;
+    private final JsonNode matcherNode;
 
-    private JsonNode concreteNode;
+    private final JsonNode concreteNode;
 
-    private Map<String, Object> bindings = new HashMap<>();
+    private final Map<String, Object> bindings = new HashMap<>();
 
     protected long matchTime = -1;//can be overridden for unit tests of the matcher
 
@@ -113,7 +113,7 @@ public class JsonMatcher {
                 return matchArray(path, (ArrayNode) matcherNode, (ArrayNode) concreteNode);
             case NULL:
                 if (concreteNode.getNodeType()!=NULL) {
-                    errors.add(new MatchError(path, "a null value", "a node with a value"+ matcherNode.toString()));
+                    errors.add(new MatchError(path, "a null value", "a node with a value"+ matcherNode));
                     return false;
                 }
                 return true;
@@ -143,10 +143,10 @@ public class JsonMatcher {
         if (!(concreteNode instanceof NullNode)){
             concrete = concreteNode.asText();
         }
-        boolean matches = true;
+        boolean matches;
         if (matcher.startsWith("$")) {
             try {
-                FieldMatcher parseMatcher = parseMatcher(matcher);
+                FieldMatcher<?> parseMatcher = parseMatcher(matcher);
                 matches = parseMatcher.matches(concrete, bindings);
             } catch (UnboundVariableException e) {
                 errors.add(new MatchError(path, e.getVar() + " to be bound", "unbound"));
@@ -165,7 +165,7 @@ public class JsonMatcher {
         return matches;
     }
 
-    private FieldMatcher parseMatcher(String matcher) {
+    private FieldMatcher<?> parseMatcher(String matcher) {
         MatcherLexer l = new MatcherLexer(CharStreams.fromString(matcher));
         MatcherParser p = new MatcherParser(new CommonTokenStream(l));
         p.addErrorListener(new BaseErrorListener() {
@@ -177,7 +177,7 @@ public class JsonMatcher {
         GrammarListenerMatcher listener = new GrammarListenerMatcher(bindings);
         p.addParseListener(listener);
         p.matcher();
-        FieldMatcher result = listener.result;
+        FieldMatcher<?> result = listener.result;
         if (result == null) {
             throw new UnsupportedOperationException("cant parse matcher " + matcher);
         }
@@ -303,7 +303,7 @@ public class JsonMatcher {
                     }
                 }
                 //interpret this node as a matcher
-                FieldMatcher matcher = parseMatcher(key);
+                FieldMatcher<?> matcher = parseMatcher(key);
                 matchedNodes = new LinkedHashMap<>();
                 for (Iterator<Entry<String, JsonNode>> citerator = concreteNode.fields(); citerator.hasNext(); ) {
                     Entry<String, JsonNode> cchild = citerator.next();
@@ -333,15 +333,16 @@ public class JsonMatcher {
                 return false;
             } else {
                 matchedKeys.add(key);
+                //TODO check if this should be &=
                 result = matchedNodes.entrySet().stream()
-                        .map((Function<Entry<String, JsonNode>, Boolean>) e -> matches(new JsonPath(e.getKey(), path),
+                        .map(e -> matches(new JsonPath(e.getKey(), path),
                                 child.getValue(),
                                 e.getValue())).reduce(result, (r, b) -> r & b);
             }
         }
         if (strictMode) {
             List<String> concreteKeys = new ArrayList<>();
-            concreteNode.fieldNames().forEachRemaining(s -> concreteKeys.add(s));
+            concreteNode.fieldNames().forEachRemaining(concreteKeys::add);
             concreteKeys.removeAll(matchedKeys);
             if (!concreteKeys.isEmpty()) {
                 errors.add(new MatchError(path, "no additional values", concreteKeys.toString()));

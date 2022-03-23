@@ -1,0 +1,87 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Sample API",
+    "description": "API description in Markdown.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "Returns a list of users.",
+        "description": "Optional extended description in Markdown.",
+        "operationId": "getUsers",
+        "responses": {
+          "default": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/user"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/{userId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "userId",
+          "schema": {
+            "type": "integer"
+          },
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Returns a list of users.",
+        "description": "Optional extended description in Markdown.",
+        "operationId": "getUser",
+        "responses": {
+          "default": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/user"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "user": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
