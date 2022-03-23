@@ -17,13 +17,11 @@ public class MessagematchSampleApplication2 extends Application<MessagematchSamp
 
     @Override
     public void initialize(final Bootstrap<MessagematchSampleConfiguration> bootstrap) {
-        // TODO: application initialization
     }
 
     @Override
     public void run(final MessagematchSampleConfiguration configuration,
                     final Environment environment) {
-        // TODO: implement application
     }
 
 }

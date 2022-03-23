@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class LiteralGenerator extends NodeGenerator {
 
-    private JsonNode node;
+    private final JsonNode node;
 
     public LiteralGenerator(JsonNode node) {
         super(null);

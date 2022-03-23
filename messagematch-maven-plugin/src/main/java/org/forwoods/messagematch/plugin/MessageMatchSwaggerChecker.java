@@ -59,7 +59,6 @@ public class MessageMatchSwaggerChecker {
             if (openApi!=null) {
                 Paths apiPaths = openApi.getPaths();
                 for (Map.Entry<String, PathItem> pathEntry:apiPaths.entrySet()) {
-                    //TODO user java 7 URIBuilder instead
                     UriTemplate template = new UriTemplate(pathEntry.getKey());
                     for(Map.Entry<PathItem.HttpMethod, Operation> operation: pathEntry.getValue().readOperationsMap().entrySet()) {
                         boolean matched;
@@ -160,9 +159,6 @@ public class MessageMatchSwaggerChecker {
                         log.debug(channel.getUri() + "response body of "+ call.getRequestMessage() +  " did not match schema body of "+Json.pretty(schema));
                         continue;
                     }
-
-
-                    //TODO now check that all required schema params have been matched
 
                     matched=true;
                 }

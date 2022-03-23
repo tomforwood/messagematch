@@ -97,7 +97,5 @@ public class MessageSpecExtension implements ParameterResolver,
         } catch (IOException e) {
             throw new ParameterResolutionException("Cannot read spec "+value, e);
         }
-
-        //TODO verify examples against their schemas
     }
 }

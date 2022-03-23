@@ -6,7 +6,6 @@ public class UnboundVariableException extends RuntimeException {
 
 	public UnboundVariableException(String var) {
 		this.var = var;
-		// TODO Auto-generated constructor stub
 	}
 
 	/**

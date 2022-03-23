@@ -7,7 +7,7 @@ import java.util.Map;
 public abstract class FieldMatcher<T extends Comparable<T>> {
 	protected final String binding;
 	protected final boolean nullable;
-	private FieldComparatorMatcher comparator;
+	private final FieldComparatorMatcher comparator;
 
 	public FieldMatcher(String binding, boolean nullable, FieldComparatorMatcher comparator) {
 		this.binding = binding;
@@ -44,7 +44,7 @@ public abstract class FieldMatcher<T extends Comparable<T>> {
 				long epochMilli = ((Instant)existing).toEpochMilli();
 				return ms != epochMilli;
 			}
-			catch (NumberFormatException e) {}//it isn't a number so assume it is ISO
+			catch (NumberFormatException ignored) {}//it isn't a number so assume it is ISO
 			return !existing.toString().equals(value);
 		}
 		if (existing instanceof Temporal) {

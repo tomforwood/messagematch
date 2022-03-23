@@ -1,6 +1,5 @@
 package org.forwoods.messagematch.generate;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 import org.forwoods.messagematch.generate.nodegenerators.*;
@@ -14,7 +13,7 @@ import org.forwoods.messagematch.matchgrammar.MatcherParser.TypeMatcherContext;
 public class GrammarListenerGenerator extends MatcherBaseListener {
 
 	NodeGenerator result;
-	private Map<String, ValueProvider> bindings;
+	private final Map<String, ValueProvider> bindings;
 
 	public GrammarListenerGenerator(Map<String, ValueProvider> bindings) {
 		this.bindings = bindings;
@@ -29,7 +28,7 @@ public class GrammarListenerGenerator extends MatcherBaseListener {
 			provider = new ValueProvider();
 		} else {
 			String binding = ctx.binding().IDENTIFIER().getText();
-			provider = bindings.computeIfAbsent(binding, b->new ValueProvider(b));
+			provider = bindings.computeIfAbsent(binding, ValueProvider::new);
 		}
 		if (defaultVal != null) {
 			String genVal = defaultVal.getText().substring(1);// remove ','

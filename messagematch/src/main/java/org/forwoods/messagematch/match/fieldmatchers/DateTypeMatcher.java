@@ -10,7 +10,6 @@ public class DateTypeMatcher extends FieldMatcher<ChronoLocalDate> {
 
 	public DateTypeMatcher(String binding, boolean nullable, FieldComparatorMatcher comparator) {
 		super(binding, nullable, comparator);
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override

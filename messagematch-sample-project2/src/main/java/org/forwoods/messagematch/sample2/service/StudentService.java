@@ -52,8 +52,7 @@ public class StudentService {
             HttpPost request = new HttpPost(builder.build());
             request.setEntity(new StringEntity(mapper.writeValueAsString(template)));
             HttpResponse response = httpClient.get().execute(request);
-            GreetingTemplate g = mapper.readValue(response.getEntity().getContent(), GreetingTemplate.class);
-            return g;
+            return mapper.readValue(response.getEntity().getContent(), GreetingTemplate.class);
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
         }

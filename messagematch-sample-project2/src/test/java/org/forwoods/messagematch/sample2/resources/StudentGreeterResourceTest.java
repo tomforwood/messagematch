@@ -1,6 +1,5 @@
 package org.forwoods.messagematch.sample2.resources;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -21,13 +20,11 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.validation.constraints.Digits;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Application;
@@ -70,7 +67,7 @@ class StudentGreeterResourceTest extends JerseyTest {
     private MongoBehaviourBuilder mongo;
 
     @Test
-    void sayHelloTest(@MessageSpec("src/test/resources/org/forwoods/messagematch/sample2/resources/sayHello") TestSpec event) throws IOException {
+    void sayHelloTest(@MessageSpec("src/test/resources/org/forwoods/messagematch/sample2/resources/sayHello") TestSpec event) {
         mongo.addMocks(Map.of(MongoCollection.class, collection));
         mongo.addBehavior(event.getSideEffects());
         HttpBehaviourBuilder httpBehaviour = new HttpBehaviourBuilder();
@@ -94,10 +91,9 @@ class StudentGreeterResourceTest extends JerseyTest {
         httpBehaviour.verifyBehaviour(event.getSideEffects());
     }
 
-    //TODO add a test of the save method but Oh-no! our greetingTemplate object doesn't match!
-    //This test will pass - we are internally consistant
+    //A test of the save method but Oh-no! our greetingTemplate object doesn't match!
+    //This test will pass - we are internally consistent
     //Only the messagematch maven plugin can check against the swagger and save us now
-
     @Test
     public void saveAGreetingTest(@MessageSpec("src/test/resources/org/forwoods/messagematch/sample2/resources/saveGreeting") TestSpec event) throws IOException {
         HttpBehaviourBuilder httpBehaviour = new HttpBehaviourBuilder();

@@ -14,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -132,9 +131,8 @@ public class JsonMatcher {
             case BINARY:
                 break;
         }
-
+        errors.add(new MatchError(path, " a match implementation for " + matcherNode.getNodeType(), "Unimplemented"));
         return false;
-        //TODO error
     }
 
     private boolean matchPrimitive(JsonPath path, ValueNode matcherNode, ValueNode concreteNode) {
@@ -333,8 +331,7 @@ public class JsonMatcher {
                 return false;
             } else {
                 matchedKeys.add(key);
-                //TODO check if this should be &=
-                result = matchedNodes.entrySet().stream()
+                result &= matchedNodes.entrySet().stream()
                         .map(e -> matches(new JsonPath(e.getKey(), path),
                                 child.getValue(),
                                 e.getValue())).reduce(result, (r, b) -> r & b);

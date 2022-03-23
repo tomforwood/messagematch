@@ -53,7 +53,7 @@ public class TestGenerate {
 		
 		JsonMatcher matcher = new JsonMatcher(expected, node);//notice order flipping here
 		boolean matches = matcher.matches();
-		assertTrue(matches, ()->matcher.getErrors().stream().map(s->s.toString()).collect(Collectors.joining("\n")).toString());
+		assertTrue(matches, ()-> matcher.getErrors().stream().map(s->s.toString()).collect(Collectors.joining("\n")));
 	}
 
 	static Stream<GenerateTest> getFiles() {

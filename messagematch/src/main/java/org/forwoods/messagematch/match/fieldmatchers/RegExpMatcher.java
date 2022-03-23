@@ -3,7 +3,7 @@ package org.forwoods.messagematch.match.fieldmatchers;
 import java.util.regex.Pattern;
 
 public class RegExpMatcher extends FieldMatcher<String> {
-    private Pattern pattern;
+    private final Pattern pattern;
 
 	public RegExpMatcher(String regExp, String binding, boolean nullable, FieldComparatorMatcher comparator) {
 		super(binding, nullable, comparator);

@@ -1,13 +1,11 @@
 # messagematch-sampleproject2
 
-How to start the messagematch-sampleproject2 application
----
+This application isn't designed to run but to show how messagematch can be used to test a microservice that relies on another microservice (the sample service defined in the neighbouring maven module).
 
-1. Run `mvn clean install` to build your application
-1. Start application with `java -jar target/messagematch-sample-project2-0.0.4-SNAPSHOT.jar server config.yml`
-1. To check that your application is running enter url `http://localhost:8080`
+It defines a standard REST endpoint and then some TestSpec tests of the endpoint. There are a couple of deliberate errors in the implementation though, greeting has been misspelled as greebing
 
-Health Check
----
+Everything in tghis project is internally consistent, the typo is in a file that duplicates a call in the sample 1 project.
 
-To see your applications health enter url `http://localhost:8081/healthcheck`
+The only way it can be detected it using the message-match-maven plugin which checks the erroneous call against the published api of the sample 1 project.
+
+This results in an error (currently only log rather than build fail) in the maven build.
