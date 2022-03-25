@@ -60,18 +60,26 @@ public class HelloWorldTest extends JerseyTest {
 
     @Test
     public void testHello(@MessageSpec("src/test/resources/org/forwoods/messagematch/sample/resources/sayHello") TestSpec event) throws IOException {
+        //We have expected behaviour for mongo so set up the expectations
+        //given
         mongo.addMocks(Map.of(MongoCollection.class, collection));
         mongo.addBehavior(event.getSideEffects());
+
+        //build the test
+        //when
         URIChannel channel = (URIChannel) event.getCallUnderTest().getChannel();
         WebTarget target = target(channel.getUri());
         target = addParams(target, event.getCallUnderTest().getRequestMessage());
         Response response = target.request()
                 .get();
 
-
+        //then
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus(),"Http Response should be 200: ");
+        //Build a matcher to ensure that the output matches our expectation
         JsonMatcher jsonMatcher = new JsonMatcher(event.getCallUnderTest().getResponseMessage(), response.readEntity(String.class));
         assertTrue(jsonMatcher.matches(), jsonMatcher.getErrors().toString());
+        //verify the mongo sideeffects - in this case the mongo calls are not required (with min times) so no verifications are actually run
+        mongo.verifyBehaviour(event.getSideEffects());
     }
 
     private WebTarget addParams(WebTarget target, JsonNode requestMessage) {

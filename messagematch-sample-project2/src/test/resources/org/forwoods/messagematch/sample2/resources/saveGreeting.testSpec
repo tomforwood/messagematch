@@ -13,6 +13,10 @@ sideEffects:
         "@type": uri
         uri: /hello-world/saveTranslation
         method: post
+        #this call doesn't actually match the hello world endpoint (greebing is a typo)
+        #locally everything is fine the typo is consistent
+        #luckily because we have specified our intended schema we can validate agaist that and this bug is found by the plugin
+        #A better way would have been to import this as a callexample from the hello world project itself where it would have been properly tested
       requestMessage: { "language": "es", "greebingTemplate": "ola {}!" }
       responseMessage: { "language": "es", "greebingTemplate": "ola {}!" }
       schema: "classpath:sample-swagger.yaml"

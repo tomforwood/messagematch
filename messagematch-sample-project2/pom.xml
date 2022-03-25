@@ -102,6 +102,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <!-- We are using the dependency plugin to pull the openapi and callExamples out of the project we depend upon and put them on the classpath-->
                 <executions>
                     <execution>
                         <id>unpack</id>

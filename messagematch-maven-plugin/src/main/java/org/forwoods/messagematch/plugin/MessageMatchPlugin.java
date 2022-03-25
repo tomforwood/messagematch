@@ -46,6 +46,9 @@ public class MessageMatchPlugin extends AbstractMojo {
     @Parameter(readonly = true)
     private List<String> channelClasses;
 
+    @Parameter(readonly = true)
+    private List<String> excludePaths;
+
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
 
@@ -103,7 +106,6 @@ public class MessageMatchPlugin extends AbstractMojo {
         List<Path> resourcePaths= resourceDirs.stream().map(FileSet::getDirectory)
                 .map(Path::of)
                 .filter(Files::exists).collect(Collectors.toList());
-        //System.out.println(timestampDate);
         Instant start = ZonedDateTime.parse(timestampString).toInstant();
         try {
             Map<Path, Instant> lastRun = new HashMap<>();
@@ -126,7 +128,7 @@ public class MessageMatchPlugin extends AbstractMojo {
                     .filter(s->s.getVerifySchema()!=null).forEach(call->checker.checkOpenpi(call, getLog()));
 
             if (openApiFiles!=null && !openApiFiles.isEmpty()) {
-                openApiFiles.stream().map(Path::of).forEach(f->checker.checkOpenApi(specs, f));
+                openApiFiles.stream().map(Path::of).forEach(f->checker.checkOpenApi(specs, f, excludePaths));
             }
 
 
@@ -156,7 +158,6 @@ public class MessageMatchPlugin extends AbstractMojo {
             Path lastUsedPath = dir.resolve(n);
             if (!Files.exists(lastUsedPath)) return Instant.EPOCH;
             String content = Files.readString(lastUsedPath);
-            System.out.println(content);
             return ZonedDateTime.parse(content).toInstant();
         } catch (IOException e) {
             return Instant.EPOCH;
@@ -181,5 +182,9 @@ public class MessageMatchPlugin extends AbstractMojo {
 
     public void setProject(MavenProject project) {
         this.project = project;
+    }
+
+    public void setExcludedPaths(List<String> excludedPaths) {
+        this.excludePaths = excludedPaths;
     }
 }

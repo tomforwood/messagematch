@@ -5,7 +5,8 @@ callUnderTest:
     method: get
   requestMessage: { "language": "es" }#This test is broken - it hasn't provided a name, swagger integration should catch this
   responseMessage: { "greeting": "Ola tom!" }
-  schema : "classpath:sample-swagger.yaml"
+  schema : "classpath:sample-swagger.yaml" # specifying the schema for a call in *this* project should be unnecessary - it should be being tested by being run
+  #It appears here (a) to demostrate a validation and (b) because this test is deliberately unused to demonstrate a different validation
 sideEffects:
   - call:
       channel :

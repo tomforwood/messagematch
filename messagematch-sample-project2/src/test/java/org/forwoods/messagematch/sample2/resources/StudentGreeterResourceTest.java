@@ -68,12 +68,15 @@ class StudentGreeterResourceTest extends JerseyTest {
 
     @Test
     void sayHelloTest(@MessageSpec("src/test/resources/org/forwoods/messagematch/sample2/resources/sayHello") TestSpec event) {
+        //we defined behaviour for mongo and the appache httpclient so initialise those mocks here
+        //given
         mongo.addMocks(Map.of(MongoCollection.class, collection));
         mongo.addBehavior(event.getSideEffects());
         HttpBehaviourBuilder httpBehaviour = new HttpBehaviourBuilder();
         httpBehaviour.addMocks(Map.of(HttpClient.class, httpClient));
         httpBehaviour.addBehavior(event.getSideEffects());
 
+        //when
         URIChannel channel = (URIChannel) event.getCallUnderTest().getChannel();
         WebTarget target = target(channel.getUri());
         target = addParams(target, event.getCallUnderTest().getRequestMessage());
@@ -81,14 +84,16 @@ class StudentGreeterResourceTest extends JerseyTest {
         Response response = target.request()
                 .get();
 
-
+        //then
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatus(),"Http Response should be 200: ");
 
         String greeting = response.readEntity(String.class);
         JsonMatcher jsonMatcher = new JsonMatcher(event.getCallUnderTest().getResponseMessage(), JsonNodeFactory.instance.textNode(greeting));
         assertTrue(jsonMatcher.matches(), jsonMatcher.getErrors().toString());
 
+        //verify that any required calls were made
         httpBehaviour.verifyBehaviour(event.getSideEffects());
+        mongo.verifyBehaviour(event.getSideEffects());
     }
 
     //A test of the save method but Oh-no! our greetingTemplate object doesn't match!

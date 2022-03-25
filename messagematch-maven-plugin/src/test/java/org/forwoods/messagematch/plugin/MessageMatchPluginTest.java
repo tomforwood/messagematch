@@ -2,7 +2,6 @@ package org.forwoods.messagematch.plugin;
 
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +69,19 @@ class MessageMatchPluginTest {
         plugin.verifyMessageMatches();
         verify(log).warn("API path of GET:/users does not match any tested channel");
         verify(log).warn("API path of GET:/user/{userId} does not match any tested channel");
+    }
+
+    @Test
+    public void testSwaggerAPIMissedButExcluded() throws MojoExecutionException {
+        Resource res = new Resource();
+        res.setDirectory("src/test/resources/fails");
+        plugin.setResourceDirs(List.of(res));
+        plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
+        plugin.setOpenApiFiles(List.of("src/test/resources/fails/testApi.json"));
+        plugin.setExcludedPaths(List.of("/user/**"));
+
+        plugin.verifyMessageMatches();
+        verify(log, never()).warn("API path of GET:/user/{userId} does not match any tested channel");
     }
 
     @Test

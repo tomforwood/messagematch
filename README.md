@@ -10,8 +10,14 @@ It consists of libraries for
 
 Messagematch is designed to be used as part of a maven and JUnit based build as an integration/contract testing framework. It is built around a *TestSpec* defined as YAML in a .testSpec file
 
+## Example projects
+Two example projects are provided that use most of the features of this project. messagematch-sample-project (project1) and messagematch-sample-project2 (project2). Both are simple REST microservices (ussing jetty). Project2 is a service built on top of project1. Both have some deliberate mistekes in their implementation and testing which are shown up by the messagematch techniques used
+
 ## TestSpec
-A TestSpec defines the behavior for a single integration level test as a set of calls. the calls can be defined inline or as a reference (currently either a classpath reference or a reference relative to the testSpec). The *callUnderTest* the call that in being tested by this integration test, the *sideEffects* define other calls that will be made as part of the test. the side effects can specify a *times* setting the minimum and maximum number of times a call will be made. By default, a side effect cal is optional.
+A TestSpec defines the behavior for a single integration level test as a set of calls. the calls can be defined inline or as a reference (currently either a classpath reference or a reference relative to the testSpec).
+The *callUnderTest* the call that in being tested by this integration test, the *sideEffects* define other calls that will be made as part of the test. the side effects can specify a *times* setting the minimum and maximum number of times a call will be made.
+By default, a side effect call is optional i.e. a min times of 0. A side effect is likely to be considered required (min>=1) if it is essential for the correct contractual implementation e.g. a database persist call.
+
 
 A call consists of a *channel* specifying how the functionality being tested is expected to be located e.g. a GET call to a uri with value "/users" and the input and expected output to the method as [messageMatch messages](messagematch/README.md)
 

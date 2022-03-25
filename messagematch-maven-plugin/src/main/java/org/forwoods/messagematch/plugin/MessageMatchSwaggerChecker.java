@@ -27,9 +27,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class MessageMatchSwaggerChecker {
@@ -40,7 +40,13 @@ public class MessageMatchSwaggerChecker {
         this.log = log;
     }
 
-    protected void checkOpenApi(Collection<TestSpec> specPaths, Path openApiPath) {
+    protected void checkOpenApi(Collection<TestSpec> specPaths, Path openApiPath, List<String> excluded) {
+        Predicate<String> exclusionMatcher = Optional.ofNullable(excluded)
+                .stream().flatMap(Collection::stream)
+                .map(s->"glob:"+s)
+                .map(e1 -> FileSystems.getDefault().getPathMatcher(e1))
+                .<Predicate<String>>map(p->(s1 ->p.matches(Path.of(s1))))
+                .reduce(x->false,(p1, p2)->p1.or(p2));
         try {
             List<URIChannel> specChannels = specPaths.stream()
                     .filter(Objects::nonNull)
@@ -59,7 +65,9 @@ public class MessageMatchSwaggerChecker {
             if (openApi!=null) {
                 Paths apiPaths = openApi.getPaths();
                 for (Map.Entry<String, PathItem> pathEntry:apiPaths.entrySet()) {
-                    UriTemplate template = new UriTemplate(pathEntry.getKey());
+                    String path = pathEntry.getKey();
+                    if(exclusionMatcher.test(path)) continue;//this path is ignored
+                    UriTemplate template = new UriTemplate(path);
                     for(Map.Entry<PathItem.HttpMethod, Operation> operation: pathEntry.getValue().readOperationsMap().entrySet()) {
                         boolean matched;
                         List<URIChannel> uriMatches = specChannels.stream()
@@ -70,7 +78,7 @@ public class MessageMatchSwaggerChecker {
                         matched = uriMatches.stream().map(c -> template.match(c.getUri()))
                                 .anyMatch(m -> matchPathParams(m, operation.getValue().getParameters(), new HashSet<>()));
                         if (!matched) {
-                            log.warn("API path of "+operation.getKey()+":"+pathEntry.getKey()+ " does not match any tested channel");
+                            log.warn("API path of "+operation.getKey()+":"+ path + " does not match any tested channel");
                         }
 
                     }

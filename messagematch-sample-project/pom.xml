@@ -124,7 +124,7 @@
                     <timestampString>${maven.build.timestamp}</timestampString>
                     <channelClasses>org.forwoods.messagematch.mongo.MongoChannel</channelClasses>
                     <openApiFiles>
-                        <openApi>target/swagger/sample-swagger.yaml</openApi>
+                        <openApi>target/swagger/sample-swagger.yaml</openApi><!--the plugin will check that every endpoint in the provided openapi (provided as a file) has been tested-->
                     </openApiFiles>
                 </configuration>
                 <executions>
