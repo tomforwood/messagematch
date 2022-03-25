@@ -1,6 +1,7 @@
 package org.forwoods.messagematch.plugin;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.util.Json;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import io.swagger.v3.parser.util.ResolverFully;
 import org.apache.maven.plugin.logging.Log;
+import org.forwoods.messagematch.generate.JsonGenerator;
 import org.forwoods.messagematch.match.fieldmatchers.IntTypeMatcher;
 import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.TestSpec;
@@ -139,13 +141,16 @@ public class MessageMatchSwaggerChecker {
 
                     //Now check the query params
                     List<Parameter> params = op.getParameters();
+                    JsonNode requestMessageRaw = call.getRequestMessage();
+                    JsonGenerator generator = new JsonGenerator(requestMessageRaw);
+                    JsonNode requestMessage = requestMessageRaw==null?null:generator.generate();
                     if (params!=null && params.size()>0) {
-                        if (!(call.getRequestMessage() instanceof ObjectNode)) {
+                        if (!(requestMessage instanceof ObjectNode)) {
                             log.debug(channel.getUri() + " query params weren't supplied as a map of values");
                             continue;//if call asks for params they must be in the form of an array
                         }
                         boolean allMatch = true;
-                        ObjectNode arrNode = (ObjectNode) call.getRequestMessage();
+                        ObjectNode arrNode = (ObjectNode) requestMessage;
                         for (Parameter parameter : params) {
                             JsonNode paramVal = arrNode.get(parameter.getName());
                             if (paramVal == null && parameter.getRequired()) {
@@ -157,7 +162,7 @@ public class MessageMatchSwaggerChecker {
                             }
                         }
                         if (!allMatch) {
-                            log.debug(channel.getUri() + "query params of "+ call.getRequestMessage().toString() + " did not match schema params of "+ Json.pretty(params));
+                            log.debug(channel.getUri() + "query params of "+ requestMessage + " did not match schema params of "+ Json.pretty(params));
                             continue;
                         }
                     }
@@ -169,10 +174,10 @@ public class MessageMatchSwaggerChecker {
                                 .map(o->(Schema<?>)o.getSchema());
                         boolean requestBodyMatch = schema
                                 .map(SchemaValidator::new)
-                                .map(v->v.validate(call.getRequestMessage()))//if there eis a request body schema validate it
+                                .map(v->v.validate(requestMessage))//if there eis a request body schema validate it
                                 .orElse(true);//If there is no request body schema then retuen true
                         if (!requestBodyMatch) {
-                            log.debug(channel.getUri() + "request body of "+ call.getRequestMessage().toString() +  " did not match schema body of "+Json.pretty(schema.get()));
+                            log.debug(channel.getUri() + "request body of "+ requestMessage +  " did not match schema body of "+Json.pretty(schema.get()));
                             continue;
                         }
                     }
@@ -183,7 +188,7 @@ public class MessageMatchSwaggerChecker {
                     SchemaValidator schemaValidator = new SchemaValidator(schema);
                     boolean responseMatch = schemaValidator.validate(call.getResponseMessage());
                     if (!responseMatch) {
-                        log.debug(channel.getUri() + "response body of "+ call.getRequestMessage() +  " did not match schema body of "+Json.pretty(schema));
+                        log.debug(channel.getUri() + "response body of "+ requestMessage +  " did not match schema body of "+Json.pretty(schema));
                         continue;
                     }
 
@@ -192,7 +197,7 @@ public class MessageMatchSwaggerChecker {
             }
             if (matchedURI && !matched) {
                 Level l  =levels.get(Validation.MISSMATCHED_SPEC);
-                passBuild = l != Level.FAIL;
+                passBuild &= l != Level.FAIL;
                 l.log(log,"call with channel "+channel + " and request body "+ requestRoString(call) + " did not match anything in the specified schema "+u
                 + " see debug for things it nearly matched with");
             }
@@ -220,18 +225,10 @@ public class MessageMatchSwaggerChecker {
         for (Map.Entry<String, String> param:pathMatch.entrySet()) {
             Optional<Parameter> schemaParam = parameters.stream().filter(p -> p.getIn().equals("path")).filter(p -> p.getName().equals(param.getKey())).findFirst();
             if (schemaParam.isEmpty()) return false;
-            if (!matchedType(schemaParam.get().getSchema(), param.getValue())) return false;
+            SchemaValidator validator = new SchemaValidator(schemaParam.get().getSchema());
+            if (!validator.validate(JsonNodeFactory.instance.textNode(param.getValue()))) return false;
         }
         return true;
-    }
-
-    private boolean matchedType(Schema<?> schema, String value) {
-        switch(schema.getType()) {
-            case "integer" : return IntTypeMatcher.isInt(value);
-            default :
-                log.error("Unsupported openapi schema type of "+schema.getType() + " this feature is probably unfinished");
-        }
-        return false;
     }
 
     public static String inputStreamToString(InputStream is) throws IOException {

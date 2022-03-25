@@ -2,14 +2,14 @@ package org.forwoods.messagematch.plugin;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
-import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.ObjectSchema;
-import io.swagger.v3.oas.models.media.Schema;
-import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.media.*;
 import org.forwoods.messagematch.match.JsonPath;
 import org.forwoods.messagematch.match.MatchError;
+import org.forwoods.messagematch.match.fieldmatchers.IntTypeMatcher;
+import org.forwoods.messagematch.match.fieldmatchers.NumTypeMatcher;
 
 import java.util.*;
 
@@ -56,11 +56,26 @@ public class SchemaValidator {
                 }
                 return validateString(strSc, (ValueNode) matcherNode);
             case "number":
-                break;
+                NumberSchema numSch = (NumberSchema) schema;
+                if(!(matcherNode instanceof ValueNode)) {
+                    validationErrors.add(new MatchError(path, "Schema number","matcher "+matcherNode.getNodeType()));
+                    return false;
+                }
+                return validateNumber(numSch, (ValueNode) matcherNode);
             case "integer":
-                break;
+                IntegerSchema intSch = (IntegerSchema) schema;
+                if(!(matcherNode instanceof ValueNode)) {
+                    validationErrors.add(new MatchError(path, "Schema number","matcher "+matcherNode.getNodeType()));
+                    return false;
+                }
+                return validateInt(intSch, (ValueNode) matcherNode);
             case "boolean":
-                break;
+                BooleanSchema boolSch = (BooleanSchema) schema;
+                if(!(matcherNode instanceof ValueNode)) {
+                    validationErrors.add(new MatchError(path, "Schema number","matcher "+matcherNode.getNodeType()));
+                    return false;
+                }
+                return validateBool(boolSch, (ValueNode) matcherNode);
             case "array":
                 ArraySchema arr = (ArraySchema) schema;
                 if (!(matcherNode instanceof ArrayNode)) {
@@ -76,12 +91,24 @@ public class SchemaValidator {
                 }
                 return validateObject(path, obSc, (ObjectNode) matcherNode);
         }
-        //TODO implement the rest
         validationErrors.add(new MatchError(path, "an implementation","validation for schema type "+schema.getType() + " not yet implemented"));
         return false;
     }
 
+    private boolean validateBool(BooleanSchema boolSch, ValueNode matcherNode) {
+        return matcherNode.isBoolean() || matcherNode.toString().equals("true") || matcherNode.toString().equals("false");
+        //TODO other schema constraints ?
+    }
 
+    private boolean validateNumber(NumberSchema numSch, ValueNode matcherNode) {
+        return matcherNode.isFloatingPointNumber() || NumTypeMatcher.isNumber(matcherNode.toString());
+        //TODO other schema constraints
+    }
+
+    private boolean validateInt(IntegerSchema numSch, ValueNode matcherNode) {
+        return matcherNode.canConvertToExactIntegral()|| IntTypeMatcher.isInt(matcherNode.toString());
+        //TODO other schema constraints
+    }
 
     private boolean validateString(StringSchema strSc, ValueNode matcherNode) {
         //the matcher being a primitive is probably good enough for now
