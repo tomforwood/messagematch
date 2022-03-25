@@ -49,6 +49,8 @@ The maven pugin that attempts to verify the completeness of your event specifica
 
 It also checks that every endpoint defined in your openapi specification has at least one test spec that covers it. finally it ensures that any calls that reference external openapi specifications do in fact match that specification
 
+For the configuration options for the plugin see [maven plugin configuration](messagematch-maven-plugin/README.md)
+
 
 
 

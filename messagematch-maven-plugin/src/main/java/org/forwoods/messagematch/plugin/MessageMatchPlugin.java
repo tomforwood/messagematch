@@ -37,7 +37,7 @@ public class MessageMatchPlugin extends AbstractMojo {
     @Parameter(defaultValue = "${project.testResources}", required = true, readonly = true)
     List<Resource> resourceDirs;
 
-    @Parameter(defaultValue = "${session.request.startTime}", readonly = true)
+    @Parameter(required = true, readonly = true)
     private String timestampString;
 
     @Parameter(readonly = true)
@@ -48,6 +48,24 @@ public class MessageMatchPlugin extends AbstractMojo {
 
     @Parameter(readonly = true)
     private List<String> excludePaths;
+
+
+
+    private final Map<Validation, Level> actualValidationLevels = Arrays.stream(Validation.values()).collect(Collectors.toMap(v->v, Validation::getDefault));
+    @Parameter(readonly = true, property = "validationLevels")
+    private Map<String, String> validationLevels;
+
+    protected void overrideValidationLevels(Map<String, String> validationLevels) {
+        for (Map.Entry<String, String> override:validationLevels.entrySet()) {
+            Validation v = Validation.parse(override.getKey());
+            Level l = Level.parse(override.getValue());
+            if (v!=null && l!=null) {
+                getLog().debug("overriding "+v + " with "+l);
+                this.actualValidationLevels.put(v,l);
+            }
+        }
+    }
+
 
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
@@ -92,6 +110,8 @@ public class MessageMatchPlugin extends AbstractMojo {
             });
         }
 
+        if (validationLevels!=null) overrideValidationLevels(validationLevels);
+
         try {
             URL.setURLStreamHandlerFactory(new ClasspathURLStreamHandlerProvider());
         }
@@ -108,6 +128,7 @@ public class MessageMatchPlugin extends AbstractMojo {
                 .filter(Files::exists).collect(Collectors.toList());
         Instant start = ZonedDateTime.parse(timestampString).toInstant();
         try {
+            boolean buildPassed;
             Map<Path, Instant> lastRun = new HashMap<>();
             resourcePaths.forEach(f -> {
                 try {
@@ -118,17 +139,26 @@ public class MessageMatchPlugin extends AbstractMojo {
                     throw new RuntimeException(e);
                 }
             });
-            lastRun.entrySet().stream().filter(e->e.getValue()==null || e.getValue().isBefore(start))
-                    .forEach(e-> getLog().warn(e.getKey() +  " has not been checked with a test"));
+            buildPassed = lastRun.entrySet().stream().filter(e -> e.getValue() == null || e.getValue().isBefore(start))
+                    .map(e -> {
+                        Level l = actualValidationLevels.get(Validation.UNUSED_SPEC);
+                        l.log(getLog(), e.getKey() + " has not been checked with a test");
+                        return l != Level.FAIL;
+                    })
+                    .reduce(true, Boolean::logicalAnd);
 
 
             List<TestSpec> specs = lastRun.keySet().stream().map(this::readSpec).filter(Objects::nonNull).collect(Collectors.toList());
-            MessageMatchSwaggerChecker checker = new MessageMatchSwaggerChecker(getLog());
-            specs.stream().flatMap(c->Stream.concat(Stream.of(c.getCallUnderTest()),c.getSideEffects().stream().map(TriggeredCall::getCall)))
-                    .filter(s->s.getVerifySchema()!=null).forEach(call->checker.checkOpenpi(call, getLog()));
+            MessageMatchSwaggerChecker checker = new MessageMatchSwaggerChecker(getLog(), actualValidationLevels);
+            buildPassed &= specs.stream().flatMap(c->Stream.concat(Stream.of(c.getCallUnderTest()),c.getSideEffects().stream().map(TriggeredCall::getCall)))
+                    .filter(s->s.getVerifySchema()!=null).map(checker::checkOpenpi).reduce(true, Boolean::logicalAnd);
 
             if (openApiFiles!=null && !openApiFiles.isEmpty()) {
-                openApiFiles.stream().map(Path::of).forEach(f->checker.checkOpenApi(specs, f, excludePaths));
+                buildPassed &= openApiFiles.stream().map(Path::of).map(f->checker.checkOpenApi(specs, f, excludePaths)).reduce(true, Boolean::logicalAnd);
+            }
+
+            if (!buildPassed) {
+                throw new MojoExecutionException("MessageMatch api validation failed - see log for details");
             }
 
 
@@ -186,5 +216,9 @@ public class MessageMatchPlugin extends AbstractMojo {
 
     public void setExcludedPaths(List<String> excludedPaths) {
         this.excludePaths = excludedPaths;
+    }
+
+    public void setValidationLevels(Map<String, String> levels) {
+        this.validationLevels = levels;
     }
 }

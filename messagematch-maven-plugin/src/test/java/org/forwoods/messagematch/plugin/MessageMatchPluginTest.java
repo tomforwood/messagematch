@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class MessageMatchPluginTest {
@@ -17,7 +19,7 @@ class MessageMatchPluginTest {
     Log log;
     @BeforeEach
     public void setup() {
-        log = mock(Log.class);
+        log = mock(Log.class,i-> {System.out.println(i.getArgument(0).toString());return null;});
 
         plugin = new MessageMatchPlugin();
         plugin.setLog(log);
@@ -43,7 +45,7 @@ class MessageMatchPluginTest {
         plugin.verifyMessageMatches();
         String content = "src/test/resources/fails/fish.testSpec has not been checked with a test"
         		.replace('/',File.separatorChar);
-		verify(log).warn(content);
+		verify(log).error(content);
 
     }
 
@@ -85,15 +87,28 @@ class MessageMatchPluginTest {
     }
 
     @Test
-    public void testSwaggerAPIMismatch() throws MojoExecutionException {
+    public void testSwaggerAPIMismatch() {
         Resource res = new Resource();
         res.setDirectory("src/test/resources/mismatch");
         plugin.setResourceDirs(List.of(res));
         plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
 
-        plugin.verifyMessageMatches();
+        assertThrows(MojoExecutionException.class, ()->plugin.verifyMessageMatches());
         verify(log).error("call with channel get:/user/abc and request body null did not match anything in the specified schema classpath:mismatch/testApi.json see debug for things it nearly matched with");
         verify(log).error("call with channel get:/user/123 and request body null did not match anything in the specified schema classpath:mismatch/testApi.json see debug for things it nearly matched with");
+    }
+
+    @Test
+    public void testSwaggerAPIMismatchLevelOverride() throws MojoExecutionException {
+        Resource res = new Resource();
+        res.setDirectory("src/test/resources/mismatch");
+        plugin.setResourceDirs(List.of(res));
+        plugin.overrideValidationLevels(Map.of("UNUSED_SPEC", "WARN", "UNTESTED_ENDPOINT", "WARN", "MISSMATCHED_SPEC", "WARN"));
+        plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
+
+        plugin.verifyMessageMatches();
+        verify(log).warn("call with channel get:/user/abc and request body null did not match anything in the specified schema classpath:mismatch/testApi.json see debug for things it nearly matched with");
+        verify(log).warn("call with channel get:/user/123 and request body null did not match anything in the specified schema classpath:mismatch/testApi.json see debug for things it nearly matched with");
     }
 
 }

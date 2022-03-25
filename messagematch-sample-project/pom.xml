@@ -126,6 +126,9 @@
                     <openApiFiles>
                         <openApi>target/swagger/sample-swagger.yaml</openApi><!--the plugin will check that every endpoint in the provided openapi (provided as a file) has been tested-->
                     </openApiFiles>
+                    <validationLevels><!--override the default level of fail so this build can pass, and we can test the sample 2 project-->
+                        <MISSMATCHED_SPEC>ERROR</MISSMATCHED_SPEC>
+                    </validationLevels>
                 </configuration>
                 <executions>
                     <execution>

@@ -35,18 +35,22 @@ import java.util.stream.Collectors;
 public class MessageMatchSwaggerChecker {
 
     private final Log log;
+    private final Map<Validation, Level> levels;
 
-    public MessageMatchSwaggerChecker(Log log) {
+    public MessageMatchSwaggerChecker(Log log, Map<Validation, Level> levels) {
         this.log = log;
+        this.levels = levels;
     }
 
-    protected void checkOpenApi(Collection<TestSpec> specPaths, Path openApiPath, List<String> excluded) {
+    protected boolean checkOpenApi(Collection<TestSpec> specPaths, Path openApiPath, List<String> excluded) {
+        boolean passBuild = true;
+
         Predicate<String> exclusionMatcher = Optional.ofNullable(excluded)
                 .stream().flatMap(Collection::stream)
                 .map(s->"glob:"+s)
                 .map(e1 -> FileSystems.getDefault().getPathMatcher(e1))
                 .<Predicate<String>>map(p->(s1 ->p.matches(Path.of(s1))))
-                .reduce(x->false,(p1, p2)->p1.or(p2));
+                .reduce(x->false, Predicate::or);
         try {
             List<URIChannel> specChannels = specPaths.stream()
                     .filter(Objects::nonNull)
@@ -57,9 +61,10 @@ public class MessageMatchSwaggerChecker {
 
             String openApiString = Files.readString(openApiPath);
             SwaggerParseResult result = new OpenAPIParser().readContents(openApiString, null, null);
-            if (result.getMessages()!=null) {
+            if (result.getMessages()!=null && result.getMessages().size()>0) {
                 result.getMessages()
-                        .forEach(m->log.warn("Error reading openAPI, "+m));
+                        .forEach(m->log.error("Error reading openAPI, "+m));
+                passBuild = false;
             }
             OpenAPI openApi = result.getOpenAPI();
             if (openApi!=null) {
@@ -78,7 +83,9 @@ public class MessageMatchSwaggerChecker {
                         matched = uriMatches.stream().map(c -> template.match(c.getUri()))
                                 .anyMatch(m -> matchPathParams(m, operation.getValue().getParameters(), new HashSet<>()));
                         if (!matched) {
-                            log.warn("API path of "+operation.getKey()+":"+ path + " does not match any tested channel");
+                            Level l = levels.get(Validation.UNTESTED_ENDPOINT);
+                            l.log(log,"API path of "+operation.getKey()+":"+ path + " does not match any tested channel");
+                            passBuild &= l!=Level.FAIL;
                         }
 
                     }
@@ -87,24 +94,29 @@ public class MessageMatchSwaggerChecker {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return passBuild;
     }
-    public void checkOpenpi(CallExample call, Log log) {
+
+    public boolean checkOpenpi(CallExample call) {
+        boolean passBuild=true;
+
         URL u = call.getVerifySchema();
-        if (u==null) return;
-        if (!(call.getChannel() instanceof URIChannel)) return;
+        if (u==null) return false;
+        if (!(call.getChannel() instanceof URIChannel)) return false;
         URIChannel channel = (URIChannel) call.getChannel();
         String s ;
         try {
             s = inputStreamToString(u.openStream());
-            SwaggerParseResult result = new OpenAPIParser().readContents(s, null, null);
-            if (result.getMessages()!=null) {
-                result.getMessages()
-                        .forEach(m->log.warn("Error reading openAPI, "+m));
+            SwaggerParseResult parseResult = new OpenAPIParser().readContents(s, null, null);
+            if (parseResult.getMessages()!=null && !parseResult.getMessages().isEmpty()) {
+                parseResult.getMessages()
+                        .forEach(m->log.error("Error reading openAPI, "+m));
+                return false;
             }
 
             boolean matched = false;
             boolean matchedURI = false;
-            OpenAPI openAPI = result.getOpenAPI();
+            OpenAPI openAPI = parseResult.getOpenAPI();
             new ResolverFully().resolveFully(openAPI);
             for (Map.Entry<String, PathItem> paths: openAPI.getPaths().entrySet()) {
                 UriTemplate template = new UriTemplate(paths.getKey());
@@ -129,7 +141,7 @@ public class MessageMatchSwaggerChecker {
                     List<Parameter> params = op.getParameters();
                     if (params!=null && params.size()>0) {
                         if (!(call.getRequestMessage() instanceof ObjectNode)) {
-                            log.debug(channel.getUri() + " query params weren't supplied as an map of values");
+                            log.debug(channel.getUri() + " query params weren't supplied as a map of values");
                             continue;//if call asks for params they must be in the form of an array
                         }
                         boolean allMatch = true;
@@ -179,17 +191,23 @@ public class MessageMatchSwaggerChecker {
                 }
             }
             if (matchedURI && !matched) {
-                log.error("call with channel "+channel + " and request body "+ requestRoString(call) + " did not match anything in the specified schema "+u
+                Level l  =levels.get(Validation.MISSMATCHED_SPEC);
+                passBuild = l != Level.FAIL;
+                l.log(log,"call with channel "+channel + " and request body "+ requestRoString(call) + " did not match anything in the specified schema "+u
                 + " see debug for things it nearly matched with");
             }
             if (!matchedURI) {
-                log.error("call with channel "+channel + " did not match a uri in the specified schema "+u
+                Level l  =levels.get(Validation.MISSMATCHED_SPEC);
+                passBuild &= l!=Level.FAIL;
+                l.log(log,"call with channel "+channel + " did not match a uri in the specified schema "+u
                         + " see debug for things it didn't match with");
             }
 
         } catch (IOException e) {
             log.error("Cannot access "+u);
+            passBuild = false;
         }
+        return passBuild;
     }
 
     private String requestRoString(CallExample call) {
@@ -211,7 +229,7 @@ public class MessageMatchSwaggerChecker {
         switch(schema.getType()) {
             case "integer" : return IntTypeMatcher.isInt(value);
             default :
-                log.error("Unsupported openapi schema tpye of "+schema.getType() + " this feature is probably unfinished");
+                log.error("Unsupported openapi schema type of "+schema.getType() + " this feature is probably unfinished");
         }
         return false;
     }
