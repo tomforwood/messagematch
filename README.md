@@ -27,6 +27,7 @@ To use a testSpec inside a Junit test you should use the JUnit plugin to load a 
 Athe the start of each test method BehaviourBuilder classes can be used to setup behaviour for mocks. Currently, two behaviour providers are implemented, a MockBehaviourProvider which can be used to mock any method call that takes jackson serializable objects as inputs and outputs and a MongoBehaviourProvider that mocks a MongoCollection, simply instantiate the builder and feed in the collection of side effect calls.
 
 Before use - in the test class initialiser the mongo behaviour builder need to be initialised. E.g.
+
 ```
 @BeforeAll
     public static void initialise() {
