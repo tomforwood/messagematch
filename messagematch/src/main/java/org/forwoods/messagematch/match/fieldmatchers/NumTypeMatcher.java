@@ -10,14 +10,18 @@ public class NumTypeMatcher extends FieldMatcher<BigDecimal> {
 		super(binding, nullable, comparator);
 	}
 
-	@Override
+    public static boolean isNumber(String value) {
+		return doublePattern.asMatchPredicate().test(value);
+    }
+
+    @Override
 	protected BigDecimal asComparable(String val) {
 		return new BigDecimal(val);
 	}
 
 	@Override
 	boolean doMatch(String value) {
-		return doublePattern.asMatchPredicate().test(value);
+		return isNumber(value);
 	}
 
 	@Override
