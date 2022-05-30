@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.forwoods</groupId>
   <artifactId>messagematch-parent</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.1.1</version>
   <modules>
     <module>messagematch-junit</module>
     <module>messagematch</module>

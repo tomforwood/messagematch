@@ -8,7 +8,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         include = JsonTypeInfo.As.PROPERTY)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = URIChannel.class, name = "uri"),
-        @JsonSubTypes.Type(value = MethodCallChannel.class, name = "method")
+        @JsonSubTypes.Type(value = MethodCallChannel.class, name = "method"),
+        @JsonSubTypes.Type(value = GenericChannel.class, name = "generic")
 })
 public interface Channel {
 }
