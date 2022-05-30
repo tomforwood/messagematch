@@ -38,7 +38,7 @@ public class TriggeredCall {
                          @JsonProperty("requestMessage") JsonNode requestMessage,
                          @JsonProperty("responseMessage") JsonNode responseMessage,
                          @JsonProperty("schema") URL verifySchema) {
-        this.times = null;
+        this.times = times;
         if (call!=null)
             this.call = call;
         else {
