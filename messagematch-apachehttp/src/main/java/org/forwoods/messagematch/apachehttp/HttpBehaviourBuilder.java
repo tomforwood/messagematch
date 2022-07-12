@@ -12,10 +12,7 @@ import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 import org.forwoods.messagematch.junit.BehaviourBuilder;
 import org.forwoods.messagematch.match.JsonMatcher;
-import org.forwoods.messagematch.spec.CallExample;
-import org.forwoods.messagematch.spec.TestSpec;
-import org.forwoods.messagematch.spec.TriggeredCall;
-import org.forwoods.messagematch.spec.URIChannel;
+import org.forwoods.messagematch.spec.*;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -47,6 +44,7 @@ public class HttpBehaviourBuilder extends BehaviourBuilder {
     }
 
     @Override
+    //TODO switch to new verification design
     public void verifyBehaviour(Collection<TriggeredCall> calls) {
         HttpClient httpClient = getHttpClient();
         calls.stream().filter(TriggeredCall::hasTimes).filter(c->c.getCall().getChannel() instanceof URIChannel).forEach(c-> {
@@ -57,6 +55,11 @@ public class HttpBehaviourBuilder extends BehaviourBuilder {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    @Override
+    protected Class<URIChannel> getChannelType() {
+        return URIChannel.class;
     }
 
     private HttpClient getHttpClient() {

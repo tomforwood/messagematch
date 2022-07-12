@@ -2,5 +2,5 @@ package org.forwoods.messagematch.mongo;
 
 public enum MongoMethod {
 
-    FIND, REPLACE
+    FIND, REPLACE, UPDATE
 }

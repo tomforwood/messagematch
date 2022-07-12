@@ -12,6 +12,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.lang.NonNull;
 import org.bson.Document;
+import org.forwoods.messagematch.spec.CallExample;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsSmartNulls;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -27,9 +28,11 @@ public abstract class MongoFindAnswer<T> implements Answer<FindIterable<T>> {
 
     private final ObjectMapper mapper = new ObjectMapper();
     protected final JsonNode responseMessage;
+    protected final CallExample call;
 
-    public MongoFindAnswer(JsonNode responseMessage) {
+    public MongoFindAnswer(JsonNode responseMessage, CallExample call) {
         this.responseMessage = responseMessage;
+        this.call = call;
     }
 
     private static class DefaultingAnswer extends ReturnsSmartNulls {
@@ -62,6 +65,11 @@ public abstract class MongoFindAnswer<T> implements Answer<FindIterable<T>> {
         @NonNull
         public T next() {
             return list.next();
+        }
+
+        @Override
+        public int available() {
+            return list.hasNext()?1:0;
         }
 
         @Override

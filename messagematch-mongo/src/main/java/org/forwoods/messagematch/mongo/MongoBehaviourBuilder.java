@@ -1,18 +1,18 @@
 package org.forwoods.messagematch.mongo;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOptions;
-import org.bson.Document;
-import org.bson.conversions.Bson;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.forwoods.messagematch.junit.BehaviourBuilder;
 import org.forwoods.messagematch.junit.MessageArgumentMatcher;
 import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.TriggeredCall;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.verification.VerificationMode;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
@@ -22,6 +22,11 @@ import static org.mockito.Mockito.*;
 
 public class MongoBehaviourBuilder extends BehaviourBuilder {
 
+    private final CodecRegistry codecs;
+
+    public MongoBehaviourBuilder() {
+        this.codecs = MongoClientSettings.getDefaultCodecRegistry();
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -34,19 +39,27 @@ public class MongoBehaviourBuilder extends BehaviourBuilder {
             switch(method) {
                 case FIND:
                     if (channel.getCollectionType()==null) {
-                        when(mongo.find(argThat(new MessageArgumentMatcher<Document>(c.getRequestMessage())), any(Class.class)))
-                                .thenAnswer(new MongoFindAnswerWithRuntimeClass<>(c.getResponseMessage()));
+                        when(mongo.find(argThat(new MessageArgumentMatcherBson(c.getRequestMessage(), codecs)), any(Class.class)))
+                                .thenAnswer(new MongoFindAnswerWithRuntimeClass<>(c.getResponseMessage(), c));
                     } else {
-                        when(mongo.find(argThat(new MessageArgumentMatcher<Document>(c.getRequestMessage()))))
-                                .thenAnswer(new MongoFindAnswerWithCompileClass<>(c.getResponseMessage(), channel.getCollectionType()));
+                        when(mongo.find(argThat(new MessageArgumentMatcherBson(c.getRequestMessage(), codecs))))
+                                .thenAnswer(new MongoFindAnswerWithCompileClass<>(c.getResponseMessage(), channel.getCollectionType(), c));
                     }
                     break;
                 case REPLACE:
 
-                    when(mongo.replaceOne(argThat(new MessageArgumentMatcherBson<Bson>(c.getRequestMessage().get(0))),
+                    when(mongo.replaceOne(argThat(new MessageArgumentMatcherBson(c.getRequestMessage().get(0), codecs)),
                             argThat(new MessageArgumentMatcher<>(c.getRequestMessage().get(1))),
                             any(ReplaceOptions.class)))
-                            .thenAnswer(new MongoReplaceAnswer(c.getResponseMessage()));
+                            .thenAnswer(new MongoReplaceAnswer(c.getResponseMessage(), c, callsMatched));
+                    break;
+                case UPDATE:
+                    when(mongo.updateOne(argThat(new MessageArgumentMatcherBson(c.getRequestMessage().get(0), codecs)),
+                            argThat(new MessageArgumentMatcherBson(c.getRequestMessage().get(1), codecs))))
+                            .thenAnswer(new MongoUpdateAnser(c.getResponseMessage(), c, callsMatched));
+                    when(mongo.updateMany(argThat(new MessageArgumentMatcherBson(c.getRequestMessage().get(0), codecs)),
+                            argThat(new MessageArgumentMatcherBson(c.getRequestMessage().get(1), codecs))))
+                            .thenAnswer(new MongoUpdateAnser(c.getResponseMessage(), c, callsMatched));
                     break;
                 default: throw new UnsupportedOperationException("Mongo operation not supported");
             }
@@ -61,51 +74,30 @@ public class MongoBehaviourBuilder extends BehaviourBuilder {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public void verifyBehaviour(Collection<TriggeredCall> calls) {
-        MongoCollection<?> mongo = getMongoCollection();
-        calls.stream().filter(TriggeredCall::hasTimes).filter(c->c.getCall().getChannel() instanceof MongoChannel).forEach(c->{
-            CallExample call = c.getCall();
-            MongoChannel channel = (MongoChannel) call.getChannel();
-            MongoMethod method = channel.getMethod();
-            VerificationMode mockitoTimes = toMockitoTimes(c.getTimes());
-            switch(method) {
-                case FIND:
-                    if (channel.getCollectionType()==null) {
-                        verify(mongo, mockitoTimes).find(argThat(new MessageArgumentMatcher<Document>(call.getRequestMessage())), any(Class.class));
-                    } else {
-                        verify(mongo, mockitoTimes).find(argThat(new MessageArgumentMatcher<Document>(call.getRequestMessage())));
-                    }
-                    break;
-                case REPLACE:
-                    verify(mongo, mockitoTimes).replaceOne(argThat(new MessageArgumentMatcherBson<Bson>(call.getRequestMessage().get(0))),
-                            argThat(new MessageArgumentMatcher<>(call.getRequestMessage().get(1))),
-                            any(ReplaceOptions.class));
-                    break;
-                default: throw new UnsupportedOperationException("Mongo operation not supported");
-            }
-        });
+    protected Class<MongoChannel> getChannelType() {
+        return MongoChannel.class;
     }
 
-    private static class MongoFindAnswerWithRuntimeClass<T> extends MongoFindAnswer<T> {
+    private class MongoFindAnswerWithRuntimeClass<T> extends MongoFindAnswer<T> {
 
-        public MongoFindAnswerWithRuntimeClass(JsonNode responseMessage) {
-            super(responseMessage);
+        public MongoFindAnswerWithRuntimeClass(JsonNode responseMessage, CallExample call) {
+            super(responseMessage, call);
         }
 
         @Override
         public FindIterable<T> answer(InvocationOnMock invocation) throws Throwable {
+            callsMatched.computeIfAbsent(call, c->new ArrayList<>()).add(new BehaviourBuilder.Invocation(null) );
             Class<T> returnClass = invocation.getArgument(1);
             return getFindIterable(returnClass);
         }
 
     }
 
-    private static class MongoFindAnswerWithCompileClass<T> extends MongoFindAnswer<T> {
+    private class MongoFindAnswerWithCompileClass<T> extends MongoFindAnswer<T> {
         private final Class<T> returnClass;
 
-        public MongoFindAnswerWithCompileClass(JsonNode requestMessage, String collectionType) {
-            super(requestMessage);
+        public MongoFindAnswerWithCompileClass(JsonNode requestMessage, String collectionType, CallExample call) {
+            super(requestMessage, call);
             try {
                 //noinspection unchecked
                 this.returnClass = (Class<T>)Class.forName(collectionType);
@@ -116,6 +108,7 @@ public class MongoBehaviourBuilder extends BehaviourBuilder {
 
         @Override
         public FindIterable<T> answer(InvocationOnMock invocation) throws Throwable {
+            callsMatched.computeIfAbsent(call, c->new ArrayList<>()).add(new BehaviourBuilder.Invocation(null) );
             return getFindIterable(returnClass);
         }
     }

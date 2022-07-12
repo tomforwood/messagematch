@@ -20,4 +20,12 @@ public class MongoChannel implements Channel {
         return mongoMethod;
     }
     public String getCollectionType() { return collectionType;}
+
+    @Override
+    public String toString() {
+        return "MongoChannel{" +
+                "mongoMethod=" + mongoMethod +
+                ", collectionType='" + collectionType + '\'' +
+                '}';
+    }
 }

@@ -75,12 +75,18 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
     }
 
     @Override
+    //TODO switch to new verification design
     public void verifyBehaviour(Collection<TriggeredCall> calls) {
         calls.stream().filter(TriggeredCall::hasTimes).filter(c->c.getCall().getChannel() instanceof MethodCallChannel).forEach(c->{
             MethodCallChannel channel = (MethodCallChannel) c.getCall().getChannel();
             Class<?> mockClass = getClass(channel.getClassName());
             verifyBehaviour(c.getCall(), channel, mockClass, c.getTimes());
         });
+    }
+
+    @Override
+    protected Class<MethodCallChannel> getChannelType() {
+        return MethodCallChannel.class;
     }
 
     private <T> void verifyBehaviour(CallExample c, MethodCallChannel channel, Class<T> mockClass, TriggeredCall.Times times) {

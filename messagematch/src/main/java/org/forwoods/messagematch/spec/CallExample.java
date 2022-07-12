@@ -88,4 +88,12 @@ public class CallExample {
     public void setSchema(URL verifySchema) {
         this.verifySchema = verifySchema;
     }
+
+    @Override
+    public String toString() {
+        return "CallExample{" +
+                "channel=" + channel +
+                ", requestMessage=" + requestMessage +
+                '}';
+    }
 }

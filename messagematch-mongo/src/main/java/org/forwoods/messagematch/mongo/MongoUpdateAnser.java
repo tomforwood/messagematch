@@ -14,20 +14,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class MongoReplaceAnswer implements Answer<UpdateResult> {
+public class MongoUpdateAnser implements Answer<UpdateResult> {
     private final long selectedCount;
     private final long updatedCount;
-    private final String id;
+    private BsonString updatedId;
     private final CallExample call;
     private final Map<CallExample, List<BehaviourBuilder.Invocation>> invocations;
 
-    public MongoReplaceAnswer(JsonNode responseMessage, CallExample call, Map<CallExample, List<BehaviourBuilder.Invocation>> invocations) {
+    public MongoUpdateAnser(JsonNode responseMessage, CallExample call, Map<CallExample, List<BehaviourBuilder.Invocation>> invocations) {
         selectedCount = Long.parseLong(responseMessage.get(0).toString());
         updatedCount  = Long.parseLong(responseMessage.get(1).toString());
         this.call = call;
         this.invocations = invocations;
         try {
-            id = new JsonGenerator(responseMessage.get(2).toString()).generate().toString();
+            if (responseMessage.has(2)) {
+                String id = new JsonGenerator(responseMessage.get(2).toString()).generate().toString();
+
+                updatedId = new BsonString(id);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -36,6 +40,6 @@ public class MongoReplaceAnswer implements Answer<UpdateResult> {
     @Override
     public UpdateResult answer(InvocationOnMock invocation) {
         invocations.computeIfAbsent(call, c->new ArrayList<>()).add(new BehaviourBuilder.Invocation(null) );
-        return UpdateResult.acknowledged(selectedCount, updatedCount, new BsonString(id));
+        return UpdateResult.acknowledged(selectedCount, updatedCount, updatedId);
     }
 }
