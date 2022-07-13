@@ -68,11 +68,6 @@ public abstract class MongoFindAnswer<T> implements Answer<FindIterable<T>> {
         }
 
         @Override
-        public int available() {
-            return list.hasNext()?1:0;
-        }
-
-        @Override
         public T tryNext() {
             if (!hasNext()) return null;
             return next();

@@ -87,7 +87,7 @@ public class MessageMatchPlugin extends AbstractMojo {
                     Thread.currentThread().getContextClassLoader());
 
 
-        } catch (MalformedURLException | DependencyResolutionRequiredException e) {
+        } catch (MalformedURLException | DependencyResolutionRequiredException  e) {
             throw new RuntimeException(e);
         }
     }
