@@ -16,4 +16,8 @@ public class MessageArgumentMatcher<T> implements ArgumentMatcher<T> {
     public boolean matches(T argument) {
         return new JsonMatcher(matcher, MockBehaviourBuilder.objectMapper.valueToTree(argument)).matches();
     }
+
+    public String toString() {
+        return matcher.toString();
+    }
 }

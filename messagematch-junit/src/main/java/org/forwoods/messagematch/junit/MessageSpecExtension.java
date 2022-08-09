@@ -21,12 +21,14 @@ import static org.forwoods.messagematch.spec.TestSpec.TEST_SPEC;
 public class MessageSpecExtension implements ParameterResolver,
         AfterTestExecutionCallback,
         BeforeTestExecutionCallback,
-        BeforeAllCallback{
+        BeforeAllCallback,
+        AfterAllCallback{
     public static final String LAST_USED = ".lastUsed";
     Map<String, String> testFiles = new HashMap<>();
 
 
     private final Map<Class<?>, Object> mocks = new HashMap<>();
+    MockCreationListener mockCreationListener = (mock, settings) -> mocks.put(settings.getTypeToMock(), mock);
 
     @Override
     public void beforeAll(ExtensionContext context) {
@@ -34,7 +36,12 @@ public class MessageSpecExtension implements ParameterResolver,
             URL.setURLStreamHandlerFactory(new ClasspathURLStreamHandlerProvider());
         }
         catch (Error ignored){}
-        Mockito.framework().addListener((MockCreationListener) (mock, settings) -> mocks.put(settings.getTypeToMock(), mock));
+         Mockito.framework().addListener(mockCreationListener);
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) {
+        Mockito.framework().removeListener(mockCreationListener);
     }
 
     @Override
