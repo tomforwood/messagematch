@@ -101,8 +101,8 @@ public class CallExample {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CallExample{");
-        if (name!=null) sb.append("name='").append(name).append('\'');
-        sb.append(", channel=").append(channel);
+        if (name!=null) {sb.append("name='").append(name).append("',");}
+        sb.append("channel=").append(channel);
         sb.append(", requestMessage=").append(requestMessage);
         sb.append('}');
         return sb.toString();
