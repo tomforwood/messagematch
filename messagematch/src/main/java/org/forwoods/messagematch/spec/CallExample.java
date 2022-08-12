@@ -14,6 +14,7 @@ public class CallExample {
     private String relative;
 
     //or an inline example
+    private String name;
     private Channel channel;
     private JsonNode requestMessage;
     private JsonNode responseMessage;
@@ -85,15 +86,25 @@ public class CallExample {
         this.responseMessage = responseMessage;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public void setSchema(URL verifySchema) {
         this.verifySchema = verifySchema;
     }
 
     @Override
     public String toString() {
-        return "CallExample{" +
-                "channel=" + channel +
-                ", requestMessage=" + requestMessage +
-                '}';
+        final StringBuilder sb = new StringBuilder("CallExample{");
+        if (name!=null) sb.append("name='").append(name).append('\'');
+        sb.append(", channel=").append(channel);
+        sb.append(", requestMessage=").append(requestMessage);
+        sb.append('}');
+        return sb.toString();
     }
 }

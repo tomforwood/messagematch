@@ -99,14 +99,14 @@ public class JsonMatcher {
             case BOOLEAN:
             case NUMBER:
                 if (!(concreteNode instanceof ValueNode)) {
-                    errors.add(new MatchError(path, "a value node", "A structural node"));
+                    errors.add(new MatchError(path, "a value node", "A "+concreteNode.getNodeType() + " node"));
                     return false;
                 }
                 return matchPrimitive(path, (ValueNode) matcherNode, (ValueNode) concreteNode);
 
             case ARRAY:
                 if (!(concreteNode instanceof ArrayNode)) {
-                    errors.add(new MatchError(path, "a value node", "A structural node"));
+                    errors.add(new MatchError(path, "an array node", "A "+concreteNode.getNodeType() + " node"));
                     return false;
                 }
                 return matchArray(path, (ArrayNode) matcherNode, (ArrayNode) concreteNode);
@@ -118,7 +118,7 @@ public class JsonMatcher {
                 return true;
             case OBJECT:
                 if (!(concreteNode instanceof ObjectNode)) {
-                    errors.add(new MatchError(path, "a value node", "A structural node"));
+                    errors.add(new MatchError(path, "an object node", "A "+concreteNode.getNodeType() + " node"));
                     return false;
                 }
                 return matchObject(path, (ObjectNode) matcherNode, (ObjectNode) concreteNode);
@@ -182,7 +182,7 @@ public class JsonMatcher {
         return result;
     }
 
-    Pattern sizePattern = Pattern.compile("([0-9]*)-([0-9]*)");
+    private final static Pattern sizePattern = Pattern.compile("([0-9]*)-([0-9]*)");
 
     private boolean matchArray(JsonPath path, ArrayNode matcherNode, ArrayNode concreteNode) {
         int matcherSize = matcherNode.size();

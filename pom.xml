@@ -11,6 +11,7 @@
         <module>messagematch</module>
         <module>messagematch-maven-plugin</module>
         <module>messagematch-mongo</module>
+        <module>messagematch-springjdbc</module>
     </modules>
     <packaging>pom</packaging>
     <name>Message Match</name>

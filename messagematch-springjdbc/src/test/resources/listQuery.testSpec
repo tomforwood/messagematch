@@ -1,0 +1,26 @@
+callUnderTest:
+  channel:
+    "@type": "uri"
+    uri: "something"
+    method: get
+  requestMessage:
+  responseMessage:
+sideEffects:
+  - times:
+      min: 1
+    call:
+      channel:
+        "@type": "generic"
+        "typeName": "jdbcTemplate"
+        returns: list
+        objectType : org.forwoods.messagematch.springjdbc.Pojo
+      requestMessage: { "query":"Select * from pojos where key >= ? and key <= ?",  "params":[5, 6] }
+      responseMessage: [{ "key":5, "stringVal":"hello world"}, { "key":6, "stringVal":"hello world"}]
+#  - call:
+#      channel:
+#        "@type": "generic"
+#        "typeName": "jdbcTemplate"
+#        method: list
+#        objectType : com.noon.tutoring.session.model.domain.SessionGroupMapping
+#      requestMessage: { "query":"Select id, session_id, group_id, is_active, created_at,updated_at from session_group_mapping where session_id = ?",  "params":[38612134] }
+#      responseMessage: [{"session_id":"38612134", "group_id":"94708", "is_active":"false"}]
