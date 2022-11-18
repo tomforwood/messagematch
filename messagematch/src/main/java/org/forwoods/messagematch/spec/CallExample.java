@@ -6,23 +6,23 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.concurrent.ThreadPoolExecutor;
 
-public class CallExample {
+public class CallExample<C extends Channel> {
     //Can be a reference to an example elsewhere
     private URL reference;
     private String relative;
 
     //or an inline example
     private String name;
-    private Channel channel;
+    private C channel;
     private JsonNode requestMessage;
     private JsonNode responseMessage;
     @JsonProperty("schema") private URL verifySchema;
 
+    @SuppressWarnings("unchecked")
     public void resolve(URL base) {
         if (channel == null) {
-            CallExample remote;
+            CallExample<C> remote;
             if (relative != null) {
                 try {
                     reference = new URL(base, relative);
@@ -31,18 +31,24 @@ public class CallExample {
                 }
             }
             try {
-                remote = TestSpec.specParser.readValue(reference, CallExample.class);
+                if (reference.toString().endsWith("testSpec")) {
+                    TestSpec spec = TestSpec.specParser.readValue(reference, TestSpec.class);
+                    remote = (CallExample<C>) spec.callUnderTest;
+                }
+                else {
+                    remote = TestSpec.specParser.readValue(reference, CallExample.class);
+                }
                 this.channel = remote.channel;
                 this.requestMessage = remote.requestMessage;
                 this.responseMessage = remote.responseMessage;
                 this.verifySchema = remote.verifySchema;
             } catch (IOException e) {
-                throw new RuntimeException("Error resolving refered spec " + reference, e);
+                throw new RuntimeException("Error resolving referred spec " + reference, e);
             }
         }
     }
 
-    public Channel getChannel() {
+    public C getChannel() {
         return channel;
     }
 
@@ -74,7 +80,7 @@ public class CallExample {
         this.relative = relative;
     }
 
-    public void setChannel(Channel channel) {
+    public void setChannel(C channel) {
         this.channel = channel;
     }
 

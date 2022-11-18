@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "callUnderTest": {
+      "$ref": "#/definitions/callOrRef"
+    }
+  },
+  "definitions": {
+    "callOrRef": {
+      "type": "object",
+      "oneOf": [
+        {"$ref":"#/definitions/call"},
+        {"$ref":"#/definitions/relative"},
+        {"$ref":"#/definitions/reference"}
+
+      ]
+    },
+    "relative":{
+      "type": "object",
+      "properties":{
+        "relative":{"type":"string"}
+      },
+      "required":["relative"]
+
+    },
+    "reference":{
+      "type": "object",
+      "properties":{
+        "reference":{"type":"string"}
+      },
+      "required":["reference"]
+
+    },
+    "call":{
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "object",
+          "properties": {
+            "@type": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "@type"
+          ]
+        },
+        "requestMessage": {
+        },
+        "responseMessage": {
+        }
+      },
+      "required": [
+        "channel",
+        "requestMessage",
+        "responseMessage"
+      ]
+    }
+  }
+}

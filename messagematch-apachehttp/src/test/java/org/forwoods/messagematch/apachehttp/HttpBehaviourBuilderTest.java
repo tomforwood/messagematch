@@ -1,6 +1,5 @@
 package org.forwoods.messagematch.apachehttp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
@@ -34,7 +33,7 @@ class HttpBehaviourBuilderTest {
         JsonNode request = mapper.readTree("{\"id\":1}");
         JsonNode responseNode = mapper.readTree("\"Hello tom\"");
 
-        TriggeredCall call = new TriggeredCall(null, null,
+        TriggeredCall<URIChannel> call = new TriggeredCall<>(null, null,
                 null, null,
                 new URIChannel("/hello_world", "get"),
                 request,

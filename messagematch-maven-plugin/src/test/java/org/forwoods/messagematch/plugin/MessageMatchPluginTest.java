@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -27,13 +28,21 @@ class MessageMatchPluginTest {
 
 
     @Test
-    public void testAllSpecsRun() throws MojoExecutionException {
+    public void testAllSpecsRun() throws MojoExecutionException, IOException, InterruptedException {
         Resource res = new Resource();
         res.setDirectory("src/test/resources/successs");
         plugin.setResourceDirs(List.of(res));
         plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
         plugin.verifyMessageMatches();
+        //plugin.setMessageMatchServer(URI.create("testURI"));
+        //HttpClient client = mock(HttpClient.class);
+        //when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(null);
+        //plugin.setHttpClient(client);
+
+        plugin.runValidations();
         verifyNoInteractions(log);
+        //ArgumentCaptor<HttpRequest> cap = ArgumentCaptor.forClass(HttpRequest.class);
+        //verify(client).send(cap.capture(), any(HttpResponse.BodyHandler.class));
     }
 
     @Test
@@ -80,7 +89,7 @@ class MessageMatchPluginTest {
         plugin.setResourceDirs(List.of(res));
         plugin.setTimestampString("2022-02-17T16:00:03Z[Europe/London]");
         plugin.setOpenApiFiles(List.of("src/test/resources/fails/testApi.json"));
-        plugin.setExcludedPaths(List.of("/user/**"));
+        plugin.setExcludePaths(List.of("/user/**"));
 
         plugin.verifyMessageMatches();
         verify(log, never()).warn("API path of GET:/user/{userId} does not match any tested channel");

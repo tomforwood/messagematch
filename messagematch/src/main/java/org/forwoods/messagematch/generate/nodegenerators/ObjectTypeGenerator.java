@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ObjectTypeGenerator extends NodeGenerator{
-    Map<String, NodeGenerator> children = new LinkedHashMap<>();
+    final Map<String, NodeGenerator> children = new LinkedHashMap<>();
     public ObjectTypeGenerator() {
         super(null);
     }

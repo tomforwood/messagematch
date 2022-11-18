@@ -5,7 +5,7 @@
     <parent>
         <artifactId>messagematch-parent</artifactId>
         <groupId>org.forwoods</groupId>
-        <version>0.1.4</version>
+        <version>0.1.5</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -50,12 +50,16 @@
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser</artifactId>
             <version>2.0.30</version>
-            <scope>provided</scope>
         </dependency>
         <dependency><!--used to bring in URITemplate-->
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
             <version>5.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-project</artifactId>
+            <version>2.0.6</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

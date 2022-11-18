@@ -10,3 +10,5 @@ sideEffects:
       reference : "classpath:specs/sideEffect.callExample"
   - call:
       relative : "sideEffect.callExample"
+  - call:
+      reference: "classpath:specs/imported.testSpec"

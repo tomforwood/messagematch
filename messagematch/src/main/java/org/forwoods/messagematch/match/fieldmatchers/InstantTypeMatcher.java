@@ -6,8 +6,7 @@ import java.util.function.Function;
 
 public class InstantTypeMatcher extends FieldMatcher<Instant> {
 
-	public static Function<String, Instant> parses = s->Instant.parse(s);
-	//public so it can be overridden for custom date parsers
+	private static Function<String, Instant> parses = Instant::parse;
 	
 	public InstantTypeMatcher(String binding, boolean nullable, FieldComparatorMatcher comparator) {
 		super(binding, nullable, comparator);
@@ -16,8 +15,7 @@ public class InstantTypeMatcher extends FieldMatcher<Instant> {
 	@Override
 	protected Instant asComparable(String val) {
 		try {
-			Instant result = parses.apply(val);
-			return result;
+			return parses.apply(val);
 		} catch (DateTimeParseException e) {
 			long millis = Long.parseLong(val);
 			return Instant.ofEpochMilli(millis);
@@ -43,4 +41,9 @@ public class InstantTypeMatcher extends FieldMatcher<Instant> {
 		return TimeTypeMatcher.doASymRangeTemporal(value, compareTo, s);
 	}
 
+
+	//public so it can be overridden for custom date parsers
+	public static void setParses(Function<String, Instant> parses) {
+		InstantTypeMatcher.parses = parses;
+	}
 }

@@ -13,12 +13,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class TestMatching {
 
-	static MatchingTest[] tests = new MatchingTest[] { 
+	static final MatchingTest[] tests = new MatchingTest[] {
 			new MatchingTest("int-type", "int-type", true),
 			new MatchingTest("types", "types", true),
 			new MatchingTest("int-type", "int-type-fail", false, "[Error at root:value expected matching $Int but was 1.0]"),
 			new MatchingTest("regexp-basic", "regexp-basic-pass", true),
-			new MatchingTest("regexp-basic", "regexp-basic-fail", false, "[Error at root:value expected matching $^[\\^0-9]*^,abc but was 0]"),
+			new MatchingTest("regexp-basic", "regexp-basic-fail", false, "[Error at root:value expected matching $^#[\\^0-9]*^,#abc but was 0]"),
 			new MatchingTest("comparators", "comparators", true),
 			new MatchingTest("binding", "binding-pass", true),
 			new MatchingTest("binding", "binding-fail", false, "[Error at root:value2 expected matching $Int>5=myVar but was 7]"),
@@ -62,9 +62,9 @@ class TestMatching {
 	}
 
 	static class MatchingTest {
-		String matchFile;
-		String concreteFile;
-		boolean expectsMatch;
+		final String matchFile;
+		final String concreteFile;
+		final boolean expectsMatch;
 		String error;
 
 		public MatchingTest(String matchFile, String concreteFile, boolean expectsMatch) {

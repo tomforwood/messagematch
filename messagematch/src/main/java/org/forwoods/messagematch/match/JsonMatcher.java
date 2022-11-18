@@ -7,12 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,7 +37,7 @@ import static com.fasterxml.jackson.databind.node.JsonNodeType.NULL;
  *
  */
 public class JsonMatcher {
-    static ObjectMapper mapper = new ObjectMapper();
+    static final ObjectMapper mapper = new ObjectMapper();
 
     private final List<MatchError> errors = new ArrayList<>();
 
@@ -74,9 +69,25 @@ public class JsonMatcher {
         this(matcher, readNodes(concrete));
     }
 
-    public JsonMatcher(JsonNode node, JsonNode expected) {
-        matcherNode = node;
-        concreteNode = expected;
+    public JsonMatcher(JsonNode matcher, JsonNode actual) {
+        matcherNode = matcher;
+        concreteNode = actual;
+    }
+
+    public enum MatcherOption{
+        UNORDERED,
+        STRICT
+    }
+
+    final Set<MatcherOption> options = new HashSet<>();
+
+    boolean hasOption(MatcherOption option) {
+        return options.contains(option);
+    }
+
+    public boolean matches(MatcherOption... options){
+        Collections.addAll(this.options, options);
+        return matches();
     }
 
     public boolean matches() {
@@ -112,7 +123,7 @@ public class JsonMatcher {
                 return matchArray(path, (ArrayNode) matcherNode, (ArrayNode) concreteNode);
             case NULL:
                 if (concreteNode.getNodeType()!=NULL) {
-                    errors.add(new MatchError(path, "a null value", "a node with a value"+ matcherNode));
+                    errors.add(new MatchError(path, "a null value", "a node with a value "+ concreteNode));
                     return false;
                 }
                 return true;
@@ -172,7 +183,7 @@ public class JsonMatcher {
                 throw new IllegalStateException("failed to parse at line " + line + " due to " + msg, e);
             }
         });
-        GrammarListenerMatcher listener = new GrammarListenerMatcher(bindings);
+        GrammarListenerMatcher listener = new GrammarListenerMatcher();
         p.addParseListener(listener);
         p.matcher();
         FieldMatcher<?> result = listener.result;
@@ -182,19 +193,20 @@ public class JsonMatcher {
         return result;
     }
 
-    private final static Pattern sizePattern = Pattern.compile("([0-9]*)-([0-9]*)");
+    public final static Pattern sizePattern = Pattern.compile("([0-9]*)-([0-9]*)");
 
     private boolean matchArray(JsonPath path, ArrayNode matcherNode, ArrayNode concreteNode) {
         int matcherSize = matcherNode.size();
         int concreteSize = concreteNode.size();
 
         //special flags
-        boolean strict = false;
-        boolean unordered = false;
+        boolean strict = hasOption(MatcherOption.STRICT);
+        boolean unordered = hasOption(MatcherOption.UNORDERED);
         boolean each = false;
         int min = 0;
         int max = Integer.MAX_VALUE;
         int offset = 0;
+        boolean hasSize=false;
 
         if (matcherSize == 0) {
             if (concreteSize == 0) return true;
@@ -214,6 +226,7 @@ public class JsonMatcher {
                     each = on.has("$Each");
                     JsonNode sizeNode = on.get("$Size");
                     if (sizeNode != null) {
+                        hasSize = true;
                         String bounds = sizeNode.asText();
                         Matcher m = sizePattern.matcher(bounds);
                         if (m.matches()) {
@@ -228,7 +241,10 @@ public class JsonMatcher {
                             return false;
                         }
                     }
-                    offset = 1;
+                    if (strict || unordered || each || hasSize) {
+                        offset = 1;
+                        matcherSize--;
+                    }
                 }
             }
         }
@@ -247,20 +263,45 @@ public class JsonMatcher {
 
         if (concreteSize < min) {
             errors.add(new MatchError(path, "an array of at least size " + min, Integer.toString(concreteSize)));
+            matches=false;
         }
         if (concreteSize > max) {
             errors.add(new MatchError(path, "an array of at most size " + max, Integer.toString(concreteSize)));
+            matches = false;
         }
 
-        for (int i = 0; i < matcherSize - offset; i++) {
-            JsonNode matcherChild;
-            if (each) {
-                matcherChild = matcherNode.get(offset);
-            } else {
-                matcherChild = matcherNode.get(i + offset);
+        if (!unordered) {
+            for (int i = 0; i < matcherSize - offset; i++) {
+                JsonNode matcherChild;
+                if (each) {
+                    matcherChild = matcherNode.get(offset);
+                } else {
+                    matcherChild = matcherNode.get(i + offset);
+                }
+                JsonNode concreteChild = concreteNode.get(i);
+                matches &= matches(new JsonPath("[" + i + "]", path), matcherChild, concreteChild);
             }
-            JsonNode concreteChild = concreteNode.get(i);
-            matches &= matches(new JsonPath("[" + i + "]", path), matcherChild, concreteChild);
+        }
+        else {
+            List<JsonNode> leftToMatch = new ArrayList<>();
+            concreteNode.elements().forEachRemaining(leftToMatch::add);
+            for (int i = 0; i < matcherSize - offset; i++) {
+                JsonNode matcherChild;
+                if (each) {
+                    matcherChild = matcherNode.get(offset);
+                } else {
+                    matcherChild = matcherNode.get(i + offset);
+                }
+                boolean isMatched=false;
+                for (int j=0;j<leftToMatch.size();j++) {
+                    isMatched = matches(new JsonPath("[" + i + "]", path), matcherChild, leftToMatch.get(j));
+                    if (isMatched) {
+                        leftToMatch.remove(j);
+                        break;
+                    }
+                }
+                matches &= isMatched;
+            }
         }
         return matches;
     }

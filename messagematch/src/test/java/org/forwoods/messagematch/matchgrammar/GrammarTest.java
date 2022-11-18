@@ -46,7 +46,7 @@ class GrammarTest {
 	            throw new IllegalStateException("failed to parse at line " + line + " due to " + msg, e);
 	        }
 	    });
-	    assertThrows(IllegalStateException.class, ()-> p.matcher());
+	    assertThrows(IllegalStateException.class, p::matcher);
 	}
 	
 

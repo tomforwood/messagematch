@@ -7,7 +7,7 @@
     <parent>
         <artifactId>messagematch-parent</artifactId>
         <groupId>org.forwoods</groupId>
-        <version>0.1.3</version>
+        <version>0.1.5</version>
     </parent>
     <artifactId>messagematch-sample-project</artifactId>
     <packaging>jar</packaging>
@@ -77,6 +77,15 @@
             <artifactId>swagger-annotations</artifactId>
             <version>2.1.13</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.forwoods</groupId>
+            <artifactId>messagematch</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -129,6 +138,7 @@
                     <validationLevels><!--override the default level of fail so this build can pass, and we can test the sample 2 project-->
                         <MISSMATCHED_SPEC>ERROR</MISSMATCHED_SPEC>
                     </validationLevels>
+                    <messageMatchServer>http://localhost:8080/submitReport</messageMatchServer>
                 </configuration>
                 <executions>
                     <execution>

@@ -36,7 +36,7 @@ variable: '$' IDENTIFIER;
 
 genValue : ',' literal ;
 
-literal : (REST+|NUMBER|IDENTIFIER);
+literal : (REST+|NUMBER|IDENTIFIER)*;
 
 binding : '=' IDENTIFIER;
 

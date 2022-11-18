@@ -69,7 +69,7 @@ public interface Constraint {
                 try {
                     LocalDate.parse(o.toString());
                     return true;
-                } catch (Exception e) {
+                } catch (Exception ignored) {
                 }
                 return false;
             }
@@ -88,7 +88,7 @@ public interface Constraint {
                 try {
                     LocalTime.parse(o.toString());
                     return true;
-                } catch (Exception e) {
+                } catch (Exception ignored) {
                 }
                 return false;
             }

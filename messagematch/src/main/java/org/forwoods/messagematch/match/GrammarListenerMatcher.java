@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Map;
 
 import org.forwoods.messagematch.match.fieldmatchers.*;
 import org.forwoods.messagematch.matchgrammar.MatcherBaseListener;
@@ -17,7 +16,7 @@ public class GrammarListenerMatcher extends MatcherBaseListener {
 	FieldMatcher<?> result;
 
 
-	public GrammarListenerMatcher(Map<String, Object> bindings) {
+	public GrammarListenerMatcher() {
 		super();
 	}
 

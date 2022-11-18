@@ -1,11 +1,15 @@
 package org.forwoods.messagematch.plugin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.model.FileSet;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.forwoods.messagematch.junit.MessageSpecExtension;
+import org.forwoods.messagematch.plugin.model.VersionsReport;
+import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.TestSpec;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -18,11 +22,13 @@ import org.forwoods.messagematch.util.ClasspathURLStreamHandlerProvider;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -49,11 +55,16 @@ public class MessageMatchPlugin extends AbstractMojo {
     @Parameter(readonly = true)
     private List<String> excludePaths;
 
+    @Parameter(readonly = true)
+    private URI messageMatchServer;
+    @Parameter
+    private String deployEnvironment;
 
 
     private final Map<Validation, Level> actualValidationLevels = Arrays.stream(Validation.values()).collect(Collectors.toMap(v->v, Validation::getDefault));
     @Parameter(readonly = true, property = "validationLevels")
     private Map<String, String> validationLevels;
+    private HttpClient client;
 
     protected void overrideValidationLevels(Map<String, String> validationLevels) {
         for (Map.Entry<String, String> override:validationLevels.entrySet()) {
@@ -73,7 +84,6 @@ public class MessageMatchPlugin extends AbstractMojo {
     private ClassLoader buildClassPath() {
         try {
             Set<URL> urls = new HashSet<>();
-            @SuppressWarnings("unchecked")
             List<String> elements = project.getTestClasspathElements();
             //getRuntimeClasspathElements()
             //getCompileClasspathElements()
@@ -119,10 +129,18 @@ public class MessageMatchPlugin extends AbstractMojo {
             getLog().info("Error adding classpath URL handler - it may have been previously added. " +
                     "If there is an error about resolving later this could be the cause");
         }
-        verifyMessageMatches();
+        runValidations();
     }
 
-    protected void verifyMessageMatches() throws MojoExecutionException {
+    void runValidations() throws MojoExecutionException {
+        List<TestSpec> specs = verifyMessageMatches();
+
+        if (messageMatchServer!=null && deployEnvironment!=null) {
+            submitVersionsReport(specs);
+        }
+    }
+
+    protected List<TestSpec> verifyMessageMatches() throws MojoExecutionException {
         List<Path> resourcePaths= resourceDirs.stream().map(FileSet::getDirectory)
                 .map(Path::of)
                 .filter(Files::exists).collect(Collectors.toList());
@@ -131,8 +149,8 @@ public class MessageMatchPlugin extends AbstractMojo {
             boolean buildPassed;
             Map<Path, Instant> lastRun = new HashMap<>();
             resourcePaths.forEach(f -> {
-                try {
-                    Map<Path, Instant> temp = Files.walk(f).filter(p -> p.toString().endsWith(TEST_SPEC))
+                try (Stream<Path> walk = Files.walk(f)){
+                    Map<Path, Instant> temp = walk.filter(p -> p.toString().endsWith(TEST_SPEC))
                             .collect(Collectors.toMap(p -> p, this::getLastRunTime));
                     lastRun.putAll(temp);
                 } catch (IOException e) {
@@ -160,7 +178,7 @@ public class MessageMatchPlugin extends AbstractMojo {
             if (!buildPassed) {
                 throw new MojoExecutionException("MessageMatch api validation failed - see log for details");
             }
-
+            return specs;
 
         }
         catch (RuntimeException e) {
@@ -214,11 +232,81 @@ public class MessageMatchPlugin extends AbstractMojo {
         this.project = project;
     }
 
-    public void setExcludedPaths(List<String> excludedPaths) {
+    public void setExcludePaths(List<String> excludedPaths) {
         this.excludePaths = excludedPaths;
     }
 
     public void setValidationLevels(Map<String, String> levels) {
         this.validationLevels = levels;
+    }
+
+    public void setMessageMatchServer(URI messageMatchServer) {
+        this.messageMatchServer = messageMatchServer;
+    }
+
+    public void setDeployEnvironment(String environment) {
+        this.deployEnvironment = environment;
+    }
+
+    public void submitVersionsReport(List<TestSpec> specs) {
+        Artifact builtArtifact = project.getArtifact();
+        Set<URI> callsFrom = callsFrom(specs);
+        Set<File> callsFromFiles = callsFrom.stream().map(Paths::get).map(Path::toFile).collect(Collectors.toSet());
+        Set<Artifact> resolved = project.getArtifacts();
+        Set<Artifact> callsFromArtifacts = resolved.stream().filter(a->callsFromFiles.contains(a.getFile())).collect(Collectors.toSet());
+        VersionsReport report = new VersionsReport();
+        report.setBuiltArtifact(builtArtifact);
+        report.setSpecDependencies(callsFromArtifacts);
+        sendReport(report);
+    }
+
+    private void sendReport(VersionsReport report) {
+        try {
+            ObjectMapper plainMapper = new ObjectMapper();
+            byte[] data = plainMapper.writeValueAsBytes(report);
+            HttpRequest httpRequest = HttpRequest.newBuilder(messageMatchServer).POST(HttpRequest.BodyPublishers.ofByteArray(data)).build();
+            HttpClient client = getHttpClient();
+            HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            if(response.statusCode()>=300) {
+               getLog().error("Could not upload versions report to server");
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Error sending versionsReport to "+messageMatchServer,e);
+        }
+    }
+
+    private synchronized HttpClient getHttpClient() {
+        if (client==null) client = HttpClient.newBuilder().build();
+        return client;
+    }
+
+    protected synchronized void setHttpClient(HttpClient client) {
+        this.client = client;
+    }
+
+    private Set<URI> callsFrom(List<TestSpec> specs) {
+        Set<URI> result= new HashSet<>();
+        for (TestSpec spec:specs) {
+            result.add(resolveToExternal(spec.getCallUnderTest()));
+            spec.getSideEffects().stream().map(TriggeredCall::getCall).map(this::resolveToExternal).forEach(result::add);
+        }
+        return result.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    private URI resolveToExternal(CallExample<?> callUnderTest) {
+        URL ref = callUnderTest.getReference();
+        if(ref!=null && ref.getProtocol().equals("classpath")) {
+            URL resolved = ClasspathURLStreamHandlerProvider.resolveClasspathURL(ref);
+            if (resolved.getProtocol().equals("jar")) {
+                try {
+                    JarURLConnection conn = (JarURLConnection) resolved.openConnection();
+                    URL jarURL = conn.getJarFileURL();
+                    return jarURL.toURI();
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return null;
     }
 }

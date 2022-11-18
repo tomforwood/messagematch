@@ -1,0 +1,28 @@
+callUnderTest:
+  channel:
+    "@type": "uri"
+    uri: "something"
+    method: get
+  requestMessage:
+  responseMessage:
+sideEffects:
+  - times:
+      min: 1
+    call:
+      channel:
+        "@type": "generic"
+        "typeName": "jdbcTemplate"
+        returns: object
+        objectType : org.forwoods.messagematch.springjdbc.Pojo
+      requestMessage: { "query":"insert into blah(fi, f2) values (?,?)",  "params":["a", "b"] }
+      responseMessage: [{"id":5}]
+  - times:
+      min: 1
+    call:
+        channel:
+          "@type": "generic"
+          "typeName": "jdbcTemplate"
+          returns: object
+          objectType: org.forwoods.messagematch.springjdbc.Pojo
+        requestMessage: { "query": "insert into fish(fi, f2) values (?,?)",  "params": [ "a", "b" ] }
+        responseMessage: "true"

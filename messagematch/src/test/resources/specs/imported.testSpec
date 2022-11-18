@@ -1,0 +1,13 @@
+# This is a test spec theoretically imported from another project via classpath
+# This project is going to use the call UnderTest part as a sideEffect spec
+# The side effects specified in this file are irrelevant from out point of view
+# i.e. The code under test is going to call /myOtherTest with the given request and expects to get back the response message
+# This helps to tie the behaviour we expect from /myOtherTest to the behaviour that has actually been tested for myOtherTest
+callUnderTest:
+  channel:
+    "@type": uri
+    uri: /myOtherService
+    method: post
+  requestMessage: '{"data":"1"}'
+  responseMessage: '{"result":"$Int"}'
+sideEffects:

@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "callUnderTest": {
+      "$ref": "#/definitions/callOrRef"
+    },
+    "sideEffects": {
+      "type": "array",
+      "items": {"$ref":"#/definitions/callOrTimes"}
+    }
+
+  },
+  "additionalProperties":false
+,
+  "definitions": {
+    "callOrRef": {
+      "type": "object",
+      "oneOf": [
+        {"$ref":"#/definitions/call"},
+        {"$ref":"#/definitions/relative"},
+        {"$ref":"#/definitions/reference"}
+
+      ],
+      "properties":{
+        "channel": {
+          "type": "object",
+          "properties": {
+            "@type": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "@type"
+          ]
+        },
+        "requestMessage": {
+        },
+        "responseMessage": {
+        },
+        "reference":{"type":"string"},
+        "relative":{"type":"string"}
+      },
+      "additionalProperties":false
+    },
+    "relative":{
+      "type": "object",
+      "properties":{
+        "relative":{"type":"string"}
+      },
+      "required":["relative"]
+
+    },
+    "reference":{
+      "type": "object",
+      "properties":{
+        "reference":{"type":"string"}
+      },
+      "required":["reference"]
+    },
+    "call":{
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "object",
+          "properties": {
+            "@type": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "@type"
+          ]
+        },
+        "requestMessage": {
+        },
+        "responseMessage": {
+        }
+      },
+      "required": [
+        "channel",
+        "requestMessage",
+        "responseMessage"
+      ]
+    },
+    "callOrTimes": {
+      "type": "object",
+
+      "properties":{
+        "times":{"$ref":"#/definitions/times"},
+        "call":{"$ref":"#/definitions/callOrRef"}
+      },
+      "required":["call"],
+      "additionalProperties":false
+    },
+    "times":{
+      "type":"object",
+      "properties":{"min":{"type":"integer"},"max":{"type":"integer"}},
+      "additionalProperties":false
+    }
+  }
+
+}

@@ -68,7 +68,7 @@ public class GrammarListenerGenerator extends MatcherBaseListener {
 			provider = new ValueProvider();
 		} else {
 			String binding = ctx.binding().IDENTIFIER().getText();
-			provider = bindings.computeIfAbsent(binding, b->new ValueProvider(b));
+			provider = bindings.computeIfAbsent(binding, ValueProvider::new);
 		}
 		if (ctx.genValue() != null) {
 			String genVal = ctx.genValue().getText().substring(1);// remove ','

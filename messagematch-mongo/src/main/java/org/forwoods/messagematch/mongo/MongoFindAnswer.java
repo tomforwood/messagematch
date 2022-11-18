@@ -21,16 +21,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public abstract class MongoFindAnswer<T> implements Answer<FindIterable<T>> {
 
     private final ObjectMapper mapper = new ObjectMapper();
     protected final JsonNode responseMessage;
-    protected final CallExample call;
+    protected final CallExample<MongoChannel> call;
 
-    public MongoFindAnswer(JsonNode responseMessage, CallExample call) {
+    public MongoFindAnswer(JsonNode responseMessage, CallExample<MongoChannel> call) {
         this.responseMessage = responseMessage;
         this.call = call;
     }

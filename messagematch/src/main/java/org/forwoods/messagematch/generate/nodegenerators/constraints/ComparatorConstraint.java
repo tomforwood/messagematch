@@ -16,7 +16,7 @@ public class ComparatorConstraint implements Constraint{
 
     private final FieldComparator comparator;
     private final Map<String, ValueProvider> bindings;
-    private final ComparatorBehaviour behavior;
+    private final ComparatorBehaviour<?> behavior;
 
     public ComparatorConstraint(MatcherParser.ComparatorContext comp, Map<String, ValueProvider> bindings, String goalType) {
         comparator = new FieldComparator(comp);
@@ -25,7 +25,7 @@ public class ComparatorConstraint implements Constraint{
 
     }
 
-    private ComparatorBehaviour getBehaviour(String goalType) {
+    private ComparatorBehaviour<?> getBehaviour(String goalType) {
         switch (goalType) {
             case "$Instant" :
             case "$Int":
@@ -42,10 +42,10 @@ public class ComparatorConstraint implements Constraint{
     }
 
     @Override
-    public boolean matches(Object gened) {
+    public boolean matches(Object generated) {
         Object compareTo = toVP(comparator).generate();
         Optional<String> eta = comparator.getEta();
-        return behavior.matches(gened, compareTo, eta, comparator.getOp());
+        return behavior.matches(generated, compareTo, eta, comparator.getOp());
     }
 
     @Override
@@ -55,36 +55,13 @@ public class ComparatorConstraint implements Constraint{
         return  behavior.generate(compareTo, eta, comparator.getOp());
     }
 
-    /*private BigDecimal generateBD(BigDecimal compareTo) {
-        switch (comparator.getOp()) {
-            case ">=":
-            case "<=":
-            case "+-":
-                return compareTo;
-            case ">":
-                return compareTo.add(BigDecimal.ONE);
-            case "<":
-                return compareTo.subtract(BigDecimal.ONE);
-            case "++":
-                Object eta = new ProvidedConstraint(comparator.getEta().get()).generate();
-                if (eta instanceof BigInteger) {
-                    return compareTo.add(new BigDecimal((BigInteger) eta));
-                }
-                else {
-                    return compareTo.add((BigDecimal) eta);
-                }
-            default:
-                return compareTo;
-        }
-    }*/
-
     private ValueProvider toVP(FieldComparator comparator) {
         FieldComparator.ValOrVar vv = comparator.getVal();
         if (vv.getValue() !=null) {
             return new ValueProvider(new ProvidedConstraint(vv.getValue()));
         }
         else {
-            return bindings.computeIfAbsent(vv.getVariable(), b->new ValueProvider(b));
+            return bindings.computeIfAbsent(vv.getVariable(), ValueProvider::new);
         }
     }
 
@@ -113,7 +90,7 @@ public class ComparatorConstraint implements Constraint{
                 case "<":
                     return compareTo.subtract(BigInteger.ONE);
                 case "++":
-                        return compareTo.add(new BigInteger(eta.get()));
+                        return compareTo.add(new BigInteger(eta.orElse("0")));
                 default:
                     return compareTo;
             }
@@ -143,7 +120,7 @@ public class ComparatorConstraint implements Constraint{
                 case "<":
                     return compareTo.subtract(BigDecimal.ONE);
                 case "++":
-                    return compareTo.add(new BigDecimal(eta.get()));
+                    return compareTo.add(new BigDecimal(eta.orElse("0")));
                 default:
                     return compareTo;
             }

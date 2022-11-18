@@ -1,0 +1,51 @@
+callUnderTest:
+  relative: "versionReport.callExample"
+sideEffects:
+
+  - call:
+      channel:
+        "@type": "method"
+        "className": "org.forwoods.messagematch.server.dao.ArtifactDao"
+        "methodName": "findByGroupIdAndArtifactId"
+        "methodArgs": [ java.lang.String, java.lang.String ]
+        "returnType": "org.forwoods.messagematch.server.model.Artifact"
+      requestMessage: ["org.forwoods","messagematch-sample-project"]
+      responseMessage: { "id": 123, "groupId": "org.forwoods","artifactId": "messagematch-sample-project" }
+  - call:
+      channel:
+        "@type": "method"
+        "className": "org.forwoods.messagematch.server.dao.VersionedArtifactDao"
+        "methodName": "findByArtifactAndVersion"
+        "methodArgs": [ org.forwoods.messagematch.server.model.Artifact, java.lang.String ]
+        "returnType": "org.forwoods.messagematch.server.model.VersionedArtifact"
+      requestMessage: [{ "id": 123, "groupId": "org.forwoods","artifactId": "messagematch-sample-project" }, "0.1.5"]
+      responseMessage: { "id": 456, "version":"0.1.5", artifact:{ "id": 123, "groupId": "org.forwoods","artifactId": "messagematch-sample-project" }}
+  - call:
+      channel:
+        "@type": "method"
+        "className": "org.forwoods.messagematch.server.dao.ArtifactDao"
+        "methodName": "findByGroupIdAndArtifactId"
+        "methodArgs": [ java.lang.String, java.lang.String ]
+        "returnType": "org.forwoods.messagematch.server.model.Artifact"
+      requestMessage: [ "org.forwoods","messagematch" ]
+      responseMessage: { "id": 1234, "groupId": "org.forwoods","artifactId": "messagematch" }
+  - call:
+      channel:
+        "@type": "method"
+        "className": "org.forwoods.messagematch.server.dao.VersionedArtifactDao"
+        "methodName": "findByArtifactAndVersion"
+        "methodArgs": [ org.forwoods.messagematch.server.model.Artifact, java.lang.String ]
+        "returnType": "org.forwoods.messagematch.server.model.VersionedArtifact"
+      requestMessage: [ { "id": 1234, "groupId": "org.forwoods","artifactId": "messagematch" }, "0.1.5" ]
+      responseMessage: { "id": 4567, "version": "0.1.5", artifact: { "id": 123, "groupId": "org.forwoods","artifactId": "messagematch" } }
+  - times:
+      min: 1
+    call:
+      channel:
+        "@type": "method"
+        "className": "org.forwoods.messagematch.server.dao.VersionDeploymentDao"
+        "methodName": "save"
+        "methodArgs": [ "java.lang.Object" ] # type erasure
+        "returnType": "org.forwoods.messagematch.server.model.deployed.VersionsDeployedReport"
+      requestMessage:  [{ "builtArtifact": { artifact:{"groupId": "org.forwoods","artifactId": "messagematch-sample-project"},"version": "0.1.5" },"specDependencies": [ {artifact:{ "groupId": "org.forwoods","artifactId": "messagematch"}, "version": "0.1.5" } ] }]
+      responseMessage: { "id":123, "builtArtifact": { artifact:{"groupId": "org.forwoods","artifactId": "messagematch-sample-project"},"version": "0.1.5" },"specDependencies": [ {artifact:{ "groupId": "org.forwoods","artifactId": "messagematch"}, "version": "0.1.5" } ] }

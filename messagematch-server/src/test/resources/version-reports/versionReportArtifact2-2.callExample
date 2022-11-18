@@ -1,0 +1,8 @@
+channel:
+  "@type": "uri"
+  "uri": "/version-report/submit"
+  method: POST
+requestMessage: {"builtArtifact":{"artifact":{"groupId":"org.forwoods","artifactId":"messagematch"},"version":"0.1.4"},
+                 "specDependencies":[],
+                "reportTime":"$Instant", "deployedEnvironment":"qa"}
+responseMessage: {}

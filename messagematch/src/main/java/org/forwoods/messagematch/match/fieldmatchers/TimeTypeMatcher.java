@@ -58,6 +58,7 @@ public class TimeTypeMatcher extends FieldMatcher<LocalTime> {
 		return range;
 	}
 
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	protected static <T extends Temporal & Comparable>boolean doASymRangeTemporal(T value, T compareTo, String s) {
 		T start;
 		T end;

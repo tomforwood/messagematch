@@ -18,10 +18,10 @@ public class MongoReplaceAnswer implements Answer<UpdateResult> {
     private final long selectedCount;
     private final long updatedCount;
     private final String id;
-    private final CallExample call;
-    private final Map<CallExample, List<BehaviourBuilder.Invocation>> invocations;
+    private final CallExample<MongoChannel> call;
+    private final Map<CallExample<MongoChannel>, List<BehaviourBuilder.Invocation>> invocations;
 
-    public MongoReplaceAnswer(JsonNode responseMessage, CallExample call, Map<CallExample, List<BehaviourBuilder.Invocation>> invocations) {
+    public MongoReplaceAnswer(JsonNode responseMessage, CallExample<MongoChannel> call, Map<CallExample<MongoChannel>, List<BehaviourBuilder.Invocation>> invocations) {
         selectedCount = Long.parseLong(responseMessage.get(0).toString());
         updatedCount  = Long.parseLong(responseMessage.get(1).toString());
         this.call = call;
