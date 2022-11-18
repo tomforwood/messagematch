@@ -18,8 +18,10 @@ import org.mockito.Mock;
 import org.mockito.hamcrest.MockitoHamcrest;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,9 +55,16 @@ class MavenInvokerServiceTest {
     MavenInvokerService invoker = new MavenInvokerService();
 
     @BeforeEach
-    public void setup() {
+    public void setup() throws IOException {
         MessagematchServerConfig config = new MessagematchServerConfig();
-        config.setMavenHome("/opt/homebrew/bin/mvn");
+        Process p = Runtime.getRuntime().exec("where mvn");
+        BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String s = r.readLine();
+        s=s.trim();
+        System.out.println("path is ["+s+"]");
+        Path mvnExec = Path.of(s);
+        s=mvnExec.getParent().getParent().toString();
+        config.setMavenHome(s);
         invoker.config = config;
     }
 

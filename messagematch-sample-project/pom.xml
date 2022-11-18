@@ -7,7 +7,7 @@
     <parent>
         <artifactId>messagematch-parent</artifactId>
         <groupId>org.forwoods</groupId>
-        <version>0.1.5</version>
+        <version>0.1.6-SNAPSHOT</version>
     </parent>
     <artifactId>messagematch-sample-project</artifactId>
     <packaging>jar</packaging>
