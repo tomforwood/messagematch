@@ -8,19 +8,26 @@ import java.net.spi.URLStreamHandlerProvider;
 
 public class ClasspathURLStreamHandlerProvider extends URLStreamHandlerProvider {
 
+    final URLStreamHandler handler = new URLStreamHandler() {
+        @Override
+        protected URLConnection openConnection(URL u) throws IOException {
+            URL resource = resolveClasspathURL(u);
+            return resource.openConnection();
+        }
+    };
+
+    public static URL resolveClasspathURL(URL u) {
+        URL resource = Thread.currentThread().getContextClassLoader().getResource(u.getPath());
+        if (resource==null) {
+            throw new RuntimeException("Could not read resource "+ u);
+        }
+        return resource;
+    }
+
     @Override
     public URLStreamHandler createURLStreamHandler(String protocol) {
         if ("classpath".equals(protocol)) {
-            return new URLStreamHandler() {
-                @Override
-                protected URLConnection openConnection(URL u) throws IOException {
-                    URL resource = Thread.currentThread().getContextClassLoader().getResource(u.getPath());
-                    if (resource==null) {
-                        throw new RuntimeException("Could not read resource "+u);
-                    }
-                    return resource.openConnection();
-                }
-            };
+            return handler;
         }
         return null;
     }

@@ -1,0 +1,8 @@
+callUnderTest:
+  channel:
+    "@type": "uri"
+    "uri": "/compatibility-report/get"
+    method: GET
+  requestMessage:
+  responseMessage: {"environments":[{"environment":"qa","versionCompatibilities":[{"versionedArtifactTested":{"artifact":{"groupId":"org.forwoods","artifactId":"messagematch-sample-project"},"version":"0.1.5"},"overallResult":"SUCCEEDED","results":[{"testedAgainst":{"artifact":{"groupId":"org.forwoods","artifactId":"messagematch"},"version":"0.1.5"},"result":"SUCCEEDED"}]},{"versionedArtifactTested":{"artifact":{"groupId":"org.forwoods","artifactId":"messagematch"},"version":"0.1.5"},"overallResult":"SUCCEEDED","results":[]}]}]}
+sideEffects:

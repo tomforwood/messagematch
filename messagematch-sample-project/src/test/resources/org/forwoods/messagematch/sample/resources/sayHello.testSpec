@@ -8,3 +8,5 @@ sideEffects:
         collectionType : org.forwoods.messagematch.sample.api.GreetingTemplate
       requestMessage: {"language":"fr"}
       responseMessage : [{"greetingTemplate":"Bonjour %s!", "language":"fr"}]
+  - call:
+      reference: classpath:specs/sideEffect.callExample

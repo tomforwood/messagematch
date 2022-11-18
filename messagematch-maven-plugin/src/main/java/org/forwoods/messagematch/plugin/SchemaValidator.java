@@ -2,7 +2,6 @@ package org.forwoods.messagematch.plugin;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 import io.swagger.v3.oas.models.media.*;
@@ -18,7 +17,7 @@ public class SchemaValidator {
     /**
      * LENIENT - we will ignore additional fields in the matcher method
      * STRICT - (Default) Extra fields are considered errors
-     *
+     *<p>
      * The default is STRICT - no-one can rely on unspecified values being present so their presence is a potential issue
      * more often than not this is a genuine break - it could be a simple as a typo in a field name or a more complicated misunderstanding of the contract
      * it is allowable for a message producer to include extra redundant fields - in which case use LENIENT but with less protection

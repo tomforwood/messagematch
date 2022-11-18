@@ -16,7 +16,6 @@ import org.forwoods.messagematch.spec.*;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.mockito.verification.VerificationMode;
 
 import java.io.IOException;
 import java.net.URI;
@@ -24,17 +23,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HttpBehaviourBuilder extends BehaviourBuilder {
-    @Override
-    public void addBehavior(Collection<TriggeredCall> calls) {
-        HttpClient httpClient = getHttpClient();
-        calls.stream().map(TriggeredCall::getCall).filter(c->c.getChannel() instanceof URIChannel).forEach(c-> {
+public class HttpBehaviourBuilder extends BehaviourBuilder<URIChannel> {
 
+
+    @Override
+    protected void addFilteredBehavior(Stream<TriggeredCall<URIChannel>> calls) {
+        HttpClient httpClient = getHttpClient();
+        calls.map(TriggeredCall::getCall).forEach(c-> {
             try {
                 when(httpClient.execute(argThat(new RequestMatcher(c)))).thenAnswer(new HttpAnswer(c.getResponseMessage()));
             } catch (IOException e) {
@@ -45,10 +46,9 @@ public class HttpBehaviourBuilder extends BehaviourBuilder {
 
     @Override
     //TODO switch to new verification design
-    public void verifyBehaviour(Collection<TriggeredCall> calls) {
+    public void verifyBehaviour(Collection<TriggeredCall<?>> calls) {
         HttpClient httpClient = getHttpClient();
-        calls.stream().filter(TriggeredCall::hasTimes).filter(c->c.getCall().getChannel() instanceof URIChannel).forEach(c-> {
-            VerificationMode mockitoTimes = toMockitoTimes(c.getTimes());
+        filteredCalls(calls).filter(TriggeredCall::hasTimes).forEach(c-> {
             try {
                 verify(httpClient).execute(argThat(new RequestMatcher(c.getCall())));
             } catch (IOException e) {
@@ -87,11 +87,11 @@ public class HttpBehaviourBuilder extends BehaviourBuilder {
     }
 
     private static class RequestMatcher implements ArgumentMatcher<HttpUriRequest> {
-        private final CallExample call;
+        private final CallExample<URIChannel> call;
         private final URIChannel channel;
-        public RequestMatcher(CallExample c) {
+        public RequestMatcher(CallExample<URIChannel> c) {
             this.call=c;
-            this.channel=(URIChannel)c.getChannel();
+            this.channel=c.getChannel();
         }
 
         @Override

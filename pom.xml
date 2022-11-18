@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.forwoods</groupId>
     <artifactId>messagematch-parent</artifactId>
-    <version>0.1.4</version>
+    <version>0.1.5</version>
     <modules>
         <module>messagematch-junit</module>
         <module>messagematch-apachehttp</module>
@@ -12,6 +12,7 @@
         <module>messagematch-maven-plugin</module>
         <module>messagematch-mongo</module>
         <module>messagematch-springjdbc</module>
+        <module>messagematch-server</module>
     </modules>
     <packaging>pom</packaging>
     <name>Message Match</name>

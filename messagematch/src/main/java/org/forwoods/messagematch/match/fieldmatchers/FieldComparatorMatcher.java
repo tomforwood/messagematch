@@ -11,29 +11,29 @@ public class FieldComparatorMatcher extends FieldComparator {
         super(comp);
     }
 
-    public <T extends Comparable<T>> boolean match(T value, Map<String, Object> bindings, FieldMatcher matcher) {
+    public <T extends Comparable<T>> boolean match(T value, Map<String, Object> bindings, FieldMatcher<T> matcher) {
 
-        Comparable<T> compareTo;
-        Function<String, Comparable<T>> f = matcher::asComparable;
+        T compareTo;
+        Function<String, T> f = matcher::asComparable;
         compareTo = vvToComp(value, bindings, f);//, matcher::asComparable, val);
 
 
         return compare(value, matcher, compareTo, op, eta);
     }
 
-    public static <T extends Comparable<T>> boolean compare(Comparable<T> value, FieldMatcher matcher, Comparable<T> compareTo, String op, Optional<String> eta) {
+    public static <T extends Comparable<T>> boolean compare(T value, FieldMatcher<T> matcher, T compareTo, String op, Optional<String> eta) {
         switch (op) {
             case "++":
-                return matcher.doASymRange(value, compareTo, eta.get());
+                return matcher.doASymRange(value, compareTo, eta.orElse("0"));
             case "+-":
-                return matcher.doSymRange(value, compareTo, eta.get());
+                return matcher.doSymRange(value, compareTo, eta.orElse("0"));
             default:
                 return basicComp(value, compareTo, op);
         }
     }
 
-    public static <T> boolean basicComp(Comparable<T> val, Comparable<T> compareVal, String op) {
-        int comp = val.compareTo((T) compareVal);
+    public static <T extends Comparable<T>> boolean basicComp(T val, T compareVal, String op) {
+        int comp = val.compareTo(compareVal);
         switch (op) {
             case ">":
                 return comp > 0;

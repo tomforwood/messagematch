@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.net.URL;
 
-public class TriggeredCall {
+public class TriggeredCall<C extends Channel> {
 
     public static class Times {
         private final Integer min;
@@ -28,13 +28,13 @@ public class TriggeredCall {
     }
 
     private final Times times;
-    private final CallExample call;
+    private final CallExample<C> call;
 
     @JsonCreator
-    public TriggeredCall(@JsonProperty(value = "times")Times times, @JsonProperty(value = "call")CallExample call,
+    public TriggeredCall(@JsonProperty(value = "times")Times times, @JsonProperty(value = "call")CallExample<C> call,
                          @JsonProperty("reference")URL reference,
                          @JsonProperty("relative")String relative,
-                         @JsonProperty("channel") Channel channel,
+                         @JsonProperty("channel") C channel,
                          @JsonProperty("requestMessage") JsonNode requestMessage,
                          @JsonProperty("responseMessage") JsonNode responseMessage,
                          @JsonProperty("schema") URL verifySchema) {
@@ -42,7 +42,7 @@ public class TriggeredCall {
         if (call!=null)
             this.call = call;
         else {
-            this.call = new CallExample();
+            this.call = new CallExample<>();
             this.call.setReference(reference);
             this.call.setRelative(relative);
             this.call.setChannel(channel);
@@ -56,7 +56,7 @@ public class TriggeredCall {
         return times;
     }
 
-    public CallExample getCall() {
+    public CallExample<C> getCall() {
         return call;
     }
 

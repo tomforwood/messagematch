@@ -1,7 +1,6 @@
 package org.forwoods.messagematch.generate.nodegenerators;
 
 import org.forwoods.messagematch.generate.nodegenerators.constraints.Constraint;
-import org.forwoods.messagematch.generate.nodegenerators.constraints.ProvidedConstraint;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -13,7 +12,7 @@ import java.util.stream.Collectors;
 public class ValueProvider {
 
     private final String name;
-    Set<Constraint> constraints = new HashSet<>();
+    final Set<Constraint> constraints = new HashSet<>();
 
     private Object value;
 
@@ -33,7 +32,7 @@ public class ValueProvider {
     public Object generate() {
         if (value!=null) return value;
 
-        Set<Object> possibles = constraints.stream().map(c->c.generate()).collect(Collectors.toSet());
+        Set<Object> possibles = constraints.stream().map(Constraint::generate).collect(Collectors.toSet());
 
         value = possibles.stream().filter(o->constraints.stream().allMatch(c->c.matches(o))).findAny().orElseThrow(()->new RuntimeException("Unable to generate value that  matches"));
         return value;

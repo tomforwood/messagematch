@@ -2,60 +2,68 @@ package org.forwoods.messagematch.junit;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.forwoods.messagematch.generate.JsonGenerator;
 import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.MethodCallChannel;
+import org.forwoods.messagematch.spec.TestSpec;
 import org.forwoods.messagematch.spec.TriggeredCall;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Mockito;
-import org.mockito.stubbing.OngoingStubbing;
+import org.mockito.stubbing.Stubber;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
 
-public class MockBehaviourBuilder extends BehaviourBuilder {
-
-    public static ObjectMapper objectMapper = new ObjectMapper();
+public class MockBehaviourBuilder extends BehaviourBuilder<MethodCallChannel> {
 
     @Override
-    public void addBehavior(Collection<TriggeredCall> calls) {
-        calls.stream().map(TriggeredCall::getCall).filter(c->c.getChannel() instanceof MethodCallChannel).forEach(c->{
-                MethodCallChannel channel = (MethodCallChannel) c.getChannel();
+    public void addFilteredBehavior(Stream<TriggeredCall<MethodCallChannel>> calls) {
+        calls.map(TriggeredCall::getCall).forEach(c->{
+                MethodCallChannel channel = c.getChannel();
                 Class<?> mockClass = getClass(channel.getClassName());
-            addBehaviour(c, channel, mockClass);
+            addBehaviour(c, mockClass);
         });
     }
 
-    private <T> void addBehaviour(CallExample c, MethodCallChannel channel, Class<T> mockClass) {
+    private <T> void addBehaviour(CallExample<MethodCallChannel> c, Class<T> mockClass) {
         Object o =mocks.get(mockClass);
         if (o==null) {
-            throw new RuntimeException("No mock of class "+ channel.getClassName()+"found");
+            throw new RuntimeException("No mock of class "+ c.getChannel().getClassName()+"found");
         }
-        addBehavior(mockClass, mockClass.cast(o), channel, c.getRequestMessage(), c.getResponseMessage());
+        addBehavior(mockClass, mockClass.cast(o), c, c.getChannel(), c.getRequestMessage(), c.getResponseMessage());
     }
 
-    private <T> void addBehavior(Class<T> mockClass, T mock, MethodCallChannel channel, JsonNode argumentValues, JsonNode response) {
+    private <T> void addBehavior(Class<T> mockClass, T mock, CallExample<MethodCallChannel> call,  MethodCallChannel channel, JsonNode argumentValues, JsonNode response) {
         Class<?>[] paramsTypes = Arrays.stream(channel.getMethodArgs()).map(this::getClass).toArray(Class[]::new);
         try {
             Method m = mockClass.getMethod(channel.getMethodName(), paramsTypes);
-            Object o = invokeMethod(mock, (ArrayNode) argumentValues, paramsTypes, m);
-            OngoingStubbing<Object> when = Mockito.when(o);
-            when.thenAnswer(invocation -> {
+            MessageArgumentMatcher<?>[] matchers = new MessageArgumentMatcher[paramsTypes.length];
+            Stubber stubber = doAnswer(invocation -> {
                 JsonNode generate = new JsonGenerator(response).generate();
-                Type t = m.getGenericReturnType();
-                JavaType jt = TypeFactory.defaultInstance().constructType(t);
-                return objectMapper.treeToValue(generate, jt);
+                JavaType jt;
+                if(channel.getReturnType()==null){
+                    Type t = m.getGenericReturnType();
+                    jt= TypeFactory.defaultInstance().constructType(t);}
+                else {
+                    jt = TypeFactory.defaultInstance().constructType(Class.forName(channel.getReturnType()));
+                }
+                Map<String, Object> bindings = Arrays.stream(matchers).map(MessageArgumentMatcher::getBindings)
+                        .reduce(new HashMap<>(), (m1, m2) -> {
+                            m1.putAll(m2);
+                            return m1;
+                        });
+                callsMatched.computeIfAbsent(call, c -> new ArrayList<>()).add(new Invocation(bindings));
+                return TestSpec.specParser.treeToValue(generate, jt);
             });
-
+            T when1 = stubber.when(mock);
+            invokeMethod(when1, (ArrayNode) argumentValues, paramsTypes, m, matchers);
 
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Method "+channel.getMethodName()+"("+Arrays.toString(channel.getMethodArgs())
@@ -66,22 +74,14 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
         }
     }
 
-    private <T> Object invokeMethod(T mock, ArrayNode argumentValues, Class<?>[] paramsTypes, Method m) throws IllegalAccessException, InvocationTargetException {
+    private <T> void invokeMethod(T mock, ArrayNode argumentValues, Class<?>[] paramsTypes, Method m,
+                                  MessageArgumentMatcher<?>[] matchers) throws IllegalAccessException, InvocationTargetException {
         Object[] paramMatchers = new Object[paramsTypes.length];
         for (int i = 0; i< paramsTypes.length; i++) {
-            paramMatchers[i] = buildMatcher(paramsTypes[i], argumentValues.get(i));
+            matchers[i]= new MessageArgumentMatcher<>(argumentValues.get(i));
+            paramMatchers[i] = buildMatcher(paramsTypes[i], matchers[i]);
         }
-        return m.invoke(mock, paramMatchers);
-    }
-
-    @Override
-    //TODO switch to new verification design
-    public void verifyBehaviour(Collection<TriggeredCall> calls) {
-        calls.stream().filter(TriggeredCall::hasTimes).filter(c->c.getCall().getChannel() instanceof MethodCallChannel).forEach(c->{
-            MethodCallChannel channel = (MethodCallChannel) c.getCall().getChannel();
-            Class<?> mockClass = getClass(channel.getClassName());
-            verifyBehaviour(c.getCall(), channel, mockClass, c.getTimes());
-        });
+        m.invoke(mock, paramMatchers);
     }
 
     @Override
@@ -89,32 +89,8 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
         return MethodCallChannel.class;
     }
 
-    private <T> void verifyBehaviour(CallExample c, MethodCallChannel channel, Class<T> mockClass, TriggeredCall.Times times) {
-        Object o =mocks.get(mockClass);
-        if (o==null) {
-            throw new RuntimeException("No mock of class "+ channel.getClassName()+"found");
-        }
-        verifyBehavior(mockClass, mockClass.cast(o), channel, c.getRequestMessage(), times);
-    }
-
-    private <T> void verifyBehavior(Class<T> mockClass, T mock, MethodCallChannel channel, JsonNode requestMessage, TriggeredCall.Times times) {
-        Class<?>[] paramsTypes = Arrays.stream(channel.getMethodArgs()).map(this::getClass).toArray(Class[]::new);
-        try {
-            Method method = mockClass.getMethod(channel.getMethodName(), paramsTypes);
-            T verify = verify(mock, toMockitoTimes(times));
-            invokeMethod(verify, (ArrayNode) requestMessage, paramsTypes, method);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException("Method "+channel.getMethodName()+"("+Arrays.toString(channel.getMethodArgs())
-                    +") not found on "+channel.getClassName());
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("Error magic mocking Method "+channel.getMethodName()+"("+ Arrays.toString(channel.getMethodArgs())
-                    +") not found on "+channel.getClassName());
-        }
-    }
-
     @SuppressWarnings("unchecked")
-    private Object buildMatcher(Class<?> paramsType, JsonNode jsonNode) {
-        MessageArgumentMatcher<?> matcher = new MessageArgumentMatcher<>(jsonNode);
+    private Object buildMatcher(Class<?> paramsType, MessageArgumentMatcher<?> matcher) {
         if (int.class.equals(paramsType)) {
             return intThat((ArgumentMatcher<Integer>) matcher);
         }
@@ -160,5 +136,8 @@ public class MockBehaviourBuilder extends BehaviourBuilder {
 
     }
 
-
+    @Override
+    public void verifyBehaviour(Collection<TriggeredCall<?>> calls) throws BehaviourVerificationException {
+        super.verifyBehaviour(calls);
+    }
 }

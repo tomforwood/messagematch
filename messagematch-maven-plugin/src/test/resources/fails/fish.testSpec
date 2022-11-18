@@ -1,3 +1,10 @@
 {
-  "blah": 1
+  "callUnderTest": {
+    "channel": {
+      "@type": "uri"
+    },
+    "requestMessage":"",
+    "responseMessage":""
+  },
+  "sideEffects": []
 }

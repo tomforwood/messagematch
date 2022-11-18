@@ -1,7 +1,9 @@
 package org.forwoods.messagematch.spec;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
+@JsonTypeName("uri")
 public class URIChannel implements Channel{
     final String uri;
     final String method;

@@ -10,7 +10,7 @@ public class GenericChannel implements Channel {
 	@JsonProperty("typeName")
 	private String typeName;
 	
-	private Map<String, String> properties = new HashMap<>();
+	private final Map<String, String> properties = new HashMap<>();
 	
 	@JsonAnySetter
 	public void add(String key, String value) {
@@ -25,4 +25,11 @@ public class GenericChannel implements Channel {
 		return properties;
 	}
 
+	@Override
+	public String toString() {
+		return "GenericChannel{" +
+				"typeName='" + typeName + '\'' +
+				", properties=" + properties +
+				'}';
+	}
 }

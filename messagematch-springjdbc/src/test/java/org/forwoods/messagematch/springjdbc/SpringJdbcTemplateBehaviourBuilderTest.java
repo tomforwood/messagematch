@@ -7,8 +7,13 @@ import org.forwoods.messagematch.spec.TestSpec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @SuppressWarnings( {"deprecation", "ConstantConditions"} )
 public class SpringJdbcTemplateBehaviourBuilderTest {
 
-    SpringJdbcTemplateBehaviourBuilder templateBehaviourBuilder = new SpringJdbcTemplateBehaviourBuilder();
-    JdbcTemplate template = templateBehaviourBuilder.getTemplate();
+    final SpringJdbcTemplateBehaviourBuilder templateBehaviourBuilder = new SpringJdbcTemplateBehaviourBuilder();
+    final JdbcTemplate template = templateBehaviourBuilder.getTemplate();
 
     @Test
     void queryForObject(@MessageSpec("src/test/resources/objectQuery") TestSpec spec) {
@@ -29,6 +34,8 @@ public class SpringJdbcTemplateBehaviourBuilderTest {
 
         p = template.queryForObject("Select * from pojos where key = ?", (RowMapper<Pojo>)null, 5);
         assertEquals("hello world", p.stringVal);
+        int r = template.queryForObject("Select id from pojos where key = ?", new Object[]{5}, Integer.class);
+        assertEquals(1, r);
 
     }
 
@@ -54,6 +61,30 @@ public class SpringJdbcTemplateBehaviourBuilderTest {
         assertEquals("hello world", p.get(0).stringVal);
         assertEquals(2, p.size());
 
+    }
+
+    @Test
+    void saveObject(@MessageSpec("src/test/resources/saveObject") TestSpec spec) {
+        templateBehaviourBuilder.addBehavior(spec.getSideEffects());
+
+        PreparedStatementCreator psc = con->{
+            PreparedStatement stat = con.prepareStatement("insert into blah(fi, f2) values (?,?)", new String[]{"id"});
+            stat.setString(1, "a");
+            stat.setString(2,"b");
+            return stat;
+        };
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        int res = template.update(psc, keyHolder);
+        assertEquals(5, keyHolder.getKey());
+        assertEquals(1, res);
+
+        PreparedStatementCallback<Boolean> psc2 = stat->{
+            stat.setString(1, "a");
+            stat.setString(2,"b");
+            return stat.execute();
+        };
+        Boolean o=template.execute("insert into fish(fi, f2) values (?,?)", psc2);
+        assertTrue(o);
     }
 
 }

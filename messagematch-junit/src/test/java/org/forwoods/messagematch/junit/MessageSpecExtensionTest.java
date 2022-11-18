@@ -9,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -25,12 +24,12 @@ import static org.mockito.Mockito.mock;
 class MessageSpecExtensionTest {
 
     @MockMap
-    Map<Class, Object> mocks;
+    Map<Class<?>, Object> mocks;
 
     @Test
     public void testLoad(@MessageSpec("src/test/resources/fish") TestSpec spec) {
-        List<Integer> list = mock(List.class);
-        assertTrue(spec!=null);
+        @SuppressWarnings("unused") List<?> list = mock(List.class);
+        assertNotNull(spec);
         assertNotNull(mocks);
         assertEquals(1, mocks.size());
         spec.resolve(null);

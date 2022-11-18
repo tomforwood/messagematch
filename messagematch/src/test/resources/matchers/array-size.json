@@ -1,6 +1,6 @@
 {
 	"items" : [ 
 	{"$Size" : "2-"},
-	{ "$String": "$Int"}
+	{ "$String,value": "$Int"}
 	] 
 }

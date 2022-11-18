@@ -10,7 +10,6 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
@@ -18,7 +17,6 @@ import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import io.swagger.v3.parser.util.ResolverFully;
 import org.apache.maven.plugin.logging.Log;
 import org.forwoods.messagematch.generate.JsonGenerator;
-import org.forwoods.messagematch.match.fieldmatchers.IntTypeMatcher;
 import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.TestSpec;
 import org.forwoods.messagematch.spec.URIChannel;
@@ -99,7 +97,7 @@ public class MessageMatchSwaggerChecker {
         return passBuild;
     }
 
-    public boolean checkOpenpi(CallExample call) {
+    public boolean checkOpenpi(CallExample<?> call) {
         boolean passBuild=true;
 
         URL u = call.getVerifySchema();
@@ -215,7 +213,7 @@ public class MessageMatchSwaggerChecker {
         return passBuild;
     }
 
-    private String requestRoString(CallExample call) {
+    private String requestRoString(CallExample<?> call) {
         JsonNode requestMessage = call.getRequestMessage();
         if (requestMessage==null) return null;
         return requestMessage.toString();

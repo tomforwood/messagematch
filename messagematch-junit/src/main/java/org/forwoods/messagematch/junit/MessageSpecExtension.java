@@ -24,11 +24,11 @@ public class MessageSpecExtension implements ParameterResolver,
         BeforeAllCallback,
         AfterAllCallback{
     public static final String LAST_USED = ".lastUsed";
-    Map<String, String> testFiles = new HashMap<>();
+    final Map<String, String> testFiles = new HashMap<>();
 
 
-    private final Map<Class<?>, Object> mocks = new HashMap<>();
-    MockCreationListener mockCreationListener = (mock, settings) -> mocks.put(settings.getTypeToMock(), mock);
+    private static final Map<Class<?>, Object> mocks = new HashMap<>();
+    final MockCreationListener mockCreationListener = (mock, settings) -> mocks.put(settings.getTypeToMock(), mock);
 
     @Override
     public void beforeAll(ExtensionContext context) {

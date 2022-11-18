@@ -20,14 +20,54 @@ class MockBehaviourBuilderTest {
         List<Integer> list = mock(List.class);
         MockBehaviourBuilder builder = new MockBehaviourBuilder();
         builder.addMocks(Map.of(List.class, list));
-        CallExample example = new CallExample();
+        CallExample<MethodCallChannel> example = new CallExample<>();
         example.setChannel(new MethodCallChannel("java.util.List","get",new String[]{int.class.getName()}));
-        example.setRequestMessage(TestSpec.specParser.readTree("[\"$Int\"]"));
+        example.setRequestMessage(TestSpec.specParser.readTree("[\"$Int=readIndex\"]"));
         example.setResponseMessage(TestSpec.specParser.readTree("103"));
-        TriggeredCall tc = new TriggeredCall(new TriggeredCall.Times(1,1), example, null, null, null, null,null,null);
-        builder.addBehavior(List.of(tc));
+        TriggeredCall<MethodCallChannel> tc = new TriggeredCall<>(new TriggeredCall.Times(1,1), example, null, null, null, null,null,null);
+        List<TriggeredCall<?>> calls = List.of(tc);
+        builder.addBehavior(calls);
 
         Integer result = list.get(5);
+
         assertEquals(103, result);
+        assertEquals("5", builder.callsMatched.get(example).get(0).bindings.get("readIndex"));
+        builder.verifyBehaviour(calls);
+    }
+
+    @Test
+    void testVerifyuFAils() throws JsonProcessingException {
+        @SuppressWarnings("unchecked")
+        List<Integer> list = mock(List.class);
+        MockBehaviourBuilder builder = new MockBehaviourBuilder();
+        builder.addMocks(Map.of(List.class, list));
+        CallExample<MethodCallChannel> example = new CallExample<>();
+        example.setChannel(new MethodCallChannel("java.util.List","get",new String[]{int.class.getName()}));
+        example.setRequestMessage(TestSpec.specParser.readTree("[\"$Int=myVal\"]"));
+        example.setResponseMessage(TestSpec.specParser.readTree("103"));
+        TriggeredCall<MethodCallChannel> tc = new TriggeredCall<>(new TriggeredCall.Times(1,1), example, null, null, null, null,null,null);
+        List<TriggeredCall<?>> calls = List.of(tc);
+        builder.addBehavior(calls);
+        //we don't actually make the expected call so the verify should fail
+        assertThrows(BehaviourVerificationException.class, ()->builder.verifyBehaviour(calls));
+    }
+
+    @Test
+    void testBehaviourNoArgs() throws JsonProcessingException {
+        @SuppressWarnings("unchecked")
+        List<Integer> list = mock(List.class);
+        MockBehaviourBuilder builder = new MockBehaviourBuilder();
+        builder.addMocks(Map.of(List.class, list));
+        CallExample<MethodCallChannel> example = new CallExample<>();
+        example.setChannel(new MethodCallChannel("java.util.List","size",new String[]{}));
+        example.setRequestMessage(TestSpec.specParser.readTree("[]"));
+        example.setResponseMessage(TestSpec.specParser.readTree("103"));
+        TriggeredCall<MethodCallChannel> tc = new TriggeredCall<>(new TriggeredCall.Times(1,1), example, null, null, null, null,null,null);
+        List<TriggeredCall<?>> calls = List.of(tc);
+        builder.addBehavior(calls);
+
+        Integer result = list.size();
+        assertEquals(103, result);
+        builder.verifyBehaviour(calls);
     }
 }

@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,12 +30,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 
+import static org.forwoods.messagematch.match.JsonMatcher.sizePattern;
+
 /**
  * @author Tom
  *
  */
 public class JsonGenerator {
-	static ObjectMapper mapper = new ObjectMapper();
+	static final ObjectMapper mapper = new ObjectMapper();
 
 	private final JsonNode matcherNode;
 
@@ -63,7 +65,7 @@ public class JsonGenerator {
 		this.matcherNode = matcherNode;
 		this.bindings=bindings.entrySet().stream()
 				.collect(
-						Collectors.toMap(e->e.getKey(), e-> createValueProvider(e.getKey(), e.getValue().toString())));
+						Collectors.toMap(Map.Entry::getKey, e-> createValueProvider(e.getKey(), e.getValue().toString())));
 	}
 
 	private ValueProvider createValueProvider(String name, String val) {
@@ -144,9 +146,20 @@ public class JsonGenerator {
 
 	private NodeGenerator generateArray(ArrayNode matcherNode) {
 		ArrayTypeGenerator arrayGen = new ArrayTypeGenerator();
+		ArraySizeGenerator sizeGen = null;
 		for (JsonNode jsonNode : matcherNode) {
-			arrayGen.addChild(generate(jsonNode));
+			NodeGenerator generate = generate(jsonNode);
+			if (generate instanceof ArraySizeGenerator) {
+				sizeGen = (ArraySizeGenerator) generate;
+				continue;
+			}
+			arrayGen.addChild(generate);
 		}
+
+		if (sizeGen!=null) {
+			arrayGen.setSize(sizeGen.getMin(), sizeGen.getMax());
+		}
+
 		return arrayGen;
 	}
 
@@ -156,6 +169,21 @@ public class JsonGenerator {
 			Map.Entry<String, JsonNode> child = iterator.next();
 			String key = child.getKey();
 			if (key.equals("$Strict")) continue;
+			if (key.equals("$Size")) {
+				JsonNode node = child.getValue();
+				String bounds = node.asText();
+				Matcher m = sizePattern.matcher(bounds);
+				Integer min = null;
+				Integer max = null;
+				if (m.matches()) {
+					if (m.group(1).length() > 0) {
+						min = Integer.valueOf(m.group(1));
+					}
+					if (m.group(2).length() > 0) {
+						max = Integer.valueOf(m.group(2));
+					}
+				}
+				return new ArraySizeGenerator(min, max);}
 			if (key.startsWith("$")) {
 				NodeGenerator gen = parseMatcher(key);
 				JsonNode generate = gen.generate();

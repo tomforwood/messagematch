@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.forwoods.messagematch.match.JsonMatcher;
+import org.forwoods.messagematch.match.MatchError;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -19,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TestGenerate {
 
-	static GenerateTest[] tests = new GenerateTest[] { 
+	static final GenerateTest[] tests = new GenerateTest[] {
 			new GenerateTest("int-type", "int-type"),
 			new GenerateTest("regexp-basic", "regexp-basic-pass"),
 			new GenerateTest("comparators", "comparators-gened"),
@@ -27,7 +28,8 @@ public class TestGenerate {
 			new GenerateTest("types", "types"),
 			new GenerateTest("array", "array"),
 			new GenerateTest("wildkeys", "wildkeys-generated"),
-			new GenerateTest("time", "time-gen")
+			new GenerateTest("time", "time-gen"),
+			new GenerateTest("array-size", "array")
 		};
 	static ObjectMapper mapper;
 	
@@ -53,7 +55,7 @@ public class TestGenerate {
 		
 		JsonMatcher matcher = new JsonMatcher(expected, node);//notice order flipping here
 		boolean matches = matcher.matches();
-		assertTrue(matches, ()-> matcher.getErrors().stream().map(s->s.toString()).collect(Collectors.joining("\n")));
+		assertTrue(matches, ()-> matcher.getErrors().stream().map(MatchError::toString).collect(Collectors.joining("\n")));
 	}
 
 	static Stream<GenerateTest> getFiles() {
@@ -62,8 +64,8 @@ public class TestGenerate {
 	}
 
 	static class GenerateTest {
-		String matchFile;
-		String concreteFile;
+		final String matchFile;
+		final String concreteFile;
 
 		public GenerateTest(String matchFile, String concreteFile) {
 			super();

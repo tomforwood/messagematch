@@ -1,5 +1,6 @@
 package org.forwoods.messagematch.match.fieldmatchers;
 
+import org.antlr.v4.runtime.Token;
 import org.forwoods.messagematch.match.UnboundVariableException;
 import org.forwoods.messagematch.matchgrammar.MatcherParser;
 
@@ -15,17 +16,18 @@ public class FieldComparator {
     public FieldComparator(MatcherParser.ComparatorContext comp) {
         op = comp.op.getText();
         val = new ValOrVar(comp.val);
-        eta = Optional.ofNullable(comp.eta).map(e -> e.getText());
+        eta = Optional.ofNullable(comp.eta).map(Token::getText);
     }
 
-    protected <T extends Comparable<T>> Comparable<T> vvToComp(T value, Map<String, Object> bindings, Function<String, Comparable<T>> converter) {
-        Comparable<T> compareTo;
+    protected <T extends Comparable<T>> T vvToComp(T value, Map<String, Object> bindings, Function<String, T> converter) {
+        T compareTo;
         if (val.variable != null) {
             Object varVal = bindings.get(val.variable);
             if (varVal == null) throw new UnboundVariableException(val.variable);
             if (!varVal.getClass().isAssignableFrom(value.getClass())) {
                 compareTo = converter.apply(varVal.toString());
             } else {
+                //noinspection unchecked
                 compareTo = (T) varVal;
             }
         } else {
