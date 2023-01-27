@@ -61,7 +61,7 @@ public class ComparatorConstraint implements Constraint{
             return new ValueProvider(new ProvidedConstraint(vv.getValue()));
         }
         else {
-            return bindings.computeIfAbsent(vv.getVariable(), ValueProvider::new);
+            return bindings.computeIfAbsent(vv.getVariable(), b->new ValueProvider());
         }
     }
 
