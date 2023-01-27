@@ -11,21 +11,14 @@ import java.util.stream.Collectors;
 
 public class ValueProvider {
 
-    private final String name;
     final Set<Constraint> constraints = new HashSet<>();
 
     private Object value;
 
-    public ValueProvider(String key) {
-        this.name = key;
-    }
-
     public ValueProvider() {
-        this.name = null;
     }
 
     public ValueProvider(Constraint c) {
-        this.name=null;
         constraints.add(c);
     }
 
@@ -66,5 +59,9 @@ public class ValueProvider {
 
     public String asTime() {
         return generate().toString();
+    }
+
+    public boolean asBoolean() {
+        return (Boolean) generate();
     }
 }

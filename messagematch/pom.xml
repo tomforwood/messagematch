@@ -12,7 +12,7 @@
     <artifactId>messagematch</artifactId>
 
     <properties>
-        <antlrVersion>4.9.3</antlrVersion>
+        <antlrVersion>4.10.1</antlrVersion>
     </properties>
 
     <dependencies>

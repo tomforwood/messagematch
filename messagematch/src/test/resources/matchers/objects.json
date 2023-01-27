@@ -1,0 +1,4 @@
+{
+  "boundObject" : {"$ID": "myObj", "fish": "trout"},
+  "boundField": "$ID myObj/fish"
+}

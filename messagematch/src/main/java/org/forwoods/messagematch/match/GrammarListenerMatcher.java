@@ -45,6 +45,9 @@ public class GrammarListenerMatcher extends MatcherBaseListener {
 		case "$Time":
 			result = new TimeTypeMatcher(binding, nullable, comparator);
 			break;
+		case "$Boolean":
+			result = new BoolTypeMatcher(binding, nullable, comparator);
+			break;
 		default:
 			throw new UnsupportedOperationException("Cant match against type");
 		}

@@ -4,5 +4,6 @@
   "currentDate" : "2021-11-04",
   "closingTime" : "16:43:15",
   "location": "here",
-  "score" : 9.5
+  "score" : 9.5,
+  "isHappy": "true"
 }

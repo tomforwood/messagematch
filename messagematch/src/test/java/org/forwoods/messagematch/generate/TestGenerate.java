@@ -1,17 +1,20 @@
 package org.forwoods.messagematch.generate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.forwoods.messagematch.match.JsonMatcher;
 import org.forwoods.messagematch.match.MatchError;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -60,7 +63,24 @@ public class TestGenerate {
 
 	static Stream<GenerateTest> getFiles() {
 		return Arrays.stream(tests);
+	}
 
+	@Test
+	public void testObjectRef() throws IOException {
+		String matcher = "matchers/"+"objects.json";
+		InputStream min = TestGenerate.class.getClassLoader().getResourceAsStream(matcher);
+		HashMap<String, Object> bindings = new HashMap<>();
+		JsonGenerator jsonGenerator = new JsonGenerator(min, bindings);
+		JsonNode node = jsonGenerator.generate();
+		assertEquals("{\"boundObject\":{\"fish\":\"trout\"},\"boundField\":null}", node.toString());
+
+		JsonNode myObj = JsonGenerator.mapper.readTree("{\"fish\":\"herring\"}");
+		bindings.put("myObj", myObj);
+
+		min = TestGenerate.class.getClassLoader().getResourceAsStream(matcher);
+		jsonGenerator = new JsonGenerator(min, bindings);
+		node = jsonGenerator.generate();
+		assertEquals("{\"boundObject\":{\"fish\":\"herring\"},\"boundField\":\"herring\"}", node.toString());
 	}
 
 	static class GenerateTest {

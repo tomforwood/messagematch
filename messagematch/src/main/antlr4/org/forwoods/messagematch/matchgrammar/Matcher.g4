@@ -9,6 +9,7 @@ STRING:'$String';
 INSTANT:'$Instant';
 TIME:'$Time';
 DATE:'$Date';
+BOOLEAN:'$Boolean';
 
 RE : '^'(RESC | RSAFE)* '^' ;
 
@@ -22,7 +23,7 @@ matcher: (
 	typeMatcher | regexpMatcher
 ) ;
 
-typeMatcher : type=(INT|NUM|STRING|INSTANT|TIME|DATE) (nullable='?')? (comp = comparator)? binding? genValue?;
+typeMatcher : type=(INT|NUM|STRING|INSTANT|TIME|DATE|BOOLEAN) (nullable='?')? (comp = comparator)? binding? genValue?;
 
 regexpMatcher :  '$' RE binding? genValue;
 

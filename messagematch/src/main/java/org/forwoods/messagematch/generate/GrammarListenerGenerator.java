@@ -28,7 +28,7 @@ public class GrammarListenerGenerator extends MatcherBaseListener {
 			provider = new ValueProvider();
 		} else {
 			String binding = ctx.binding().IDENTIFIER().getText();
-			provider = bindings.computeIfAbsent(binding, ValueProvider::new);
+			provider = bindings.computeIfAbsent(binding, b->new ValueProvider());
 		}
 		if (defaultVal != null) {
 			String genVal = defaultVal.getText().substring(1);// remove ','
@@ -56,6 +56,9 @@ public class GrammarListenerGenerator extends MatcherBaseListener {
 		case "$Time" :
 			result = new TimeTypeGenerator(provider, bindings.get("time").asString());
 			break;
+		case "$Boolean" :
+			result = new BoolTypeGenerator(provider);
+			break;
 		default:
 			throw new UnsupportedOperationException("Cant match against type "+type);
 		}
@@ -68,7 +71,7 @@ public class GrammarListenerGenerator extends MatcherBaseListener {
 			provider = new ValueProvider();
 		} else {
 			String binding = ctx.binding().IDENTIFIER().getText();
-			provider = bindings.computeIfAbsent(binding, ValueProvider::new);
+			provider = bindings.computeIfAbsent(binding, b->new ValueProvider());
 		}
 		if (ctx.genValue() != null) {
 			String genVal = ctx.genValue().getText().substring(1);// remove ','

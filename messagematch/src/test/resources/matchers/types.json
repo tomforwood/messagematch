@@ -4,5 +4,6 @@
   "currentDate" : "$Date",
   "closingTime" : "$Time",
   "location": "$String,here",
-  "score" : "$Num,9.5"
+  "score" : "$Num,9.5",
+  "isHappy" : "$Boolean"
 }

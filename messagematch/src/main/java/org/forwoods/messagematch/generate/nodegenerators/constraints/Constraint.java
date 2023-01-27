@@ -100,4 +100,17 @@ public interface Constraint {
         };
     }
 
+    Constraint boolConstraint = new Constraint() {
+        @Override
+        public boolean matches(Object o) {
+            if (o instanceof Boolean) return true;
+            return "true".equals(o) || "false".equals(o);
+        }
+
+        @Override
+        public Object generate() {
+            return true;
+        }
+    };
+
 }

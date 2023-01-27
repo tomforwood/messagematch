@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
+import org.forwoods.messagematch.util.PathExtractor;
 
 import static org.forwoods.messagematch.match.JsonMatcher.sizePattern;
 
@@ -42,6 +43,8 @@ public class JsonGenerator {
 	private final JsonNode matcherNode;
 
 	private final Map<String, ValueProvider> bindings;
+
+	private final Map<String, Object> rawBindings;
 	
 	protected long genTime=-1;//can be overridden for unit tests of the generator
 
@@ -65,11 +68,12 @@ public class JsonGenerator {
 		this.matcherNode = matcherNode;
 		this.bindings=bindings.entrySet().stream()
 				.collect(
-						Collectors.toMap(Map.Entry::getKey, e-> createValueProvider(e.getKey(), e.getValue().toString())));
+						Collectors.toMap(Map.Entry::getKey, e-> createValueProvider(e.getValue().toString())));
+		this.rawBindings = bindings;
 	}
 
-	private ValueProvider createValueProvider(String name, String val) {
-		ValueProvider res = new ValueProvider(name);
+	private ValueProvider createValueProvider(String val) {
+		ValueProvider res = new ValueProvider();
 		res.addConstraint(new ProvidedConstraint(val));
 		return res;
 	}
@@ -81,9 +85,9 @@ public class JsonGenerator {
 		ZonedDateTime t = ZonedDateTime.ofInstant(i, ZoneOffset.UTC);
 		LocalDate d = t.toLocalDate();
 		LocalTime localTime = t.toLocalTime();
-		bindings.put("date", createValueProvider("date", d.toString()));
-		bindings.put("time", createValueProvider("time", localTime.toString()));
-		bindings.put("datetime", createValueProvider("datetime", Long.toString(genTime)));
+		bindings.put("date", createValueProvider(d.toString()));
+		bindings.put("time", createValueProvider(localTime.toString()));
+		bindings.put("datetime", createValueProvider(Long.toString(genTime)));
 		
 		return generate(matcherNode).generate();
 	}
@@ -120,6 +124,10 @@ public class JsonGenerator {
 
 	private NodeGenerator generatePrimitive(ValueNode matcherNode) {
 		String matcher = matcherNode.asText();
+		if (matcher.startsWith("$ID")) {
+			JsonNode bound = PathExtractor.extractPrimitiveNode(matcher,rawBindings);
+			return new ReferenceGenerator(bound);
+		}
 		if (matcher.startsWith("$")) {
 			return parseMatcher(matcher);
 		}
@@ -184,6 +192,12 @@ public class JsonGenerator {
 					}
 				}
 				return new ArraySizeGenerator(min, max);}
+			if (key.equals("$ID")) {
+				JsonNode bound = PathExtractor.extractObjectNode(child.getValue().asText(),rawBindings);
+				if (bound!=null)
+					return new ReferenceGenerator(bound);
+				continue;
+			}
 			if (key.startsWith("$")) {
 				NodeGenerator gen = parseMatcher(key);
 				JsonNode generate = gen.generate();

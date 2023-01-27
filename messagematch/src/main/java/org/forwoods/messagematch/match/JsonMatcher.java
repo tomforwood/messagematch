@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
+import org.forwoods.messagematch.util.PathExtractor;
 
 import static com.fasterxml.jackson.databind.node.JsonNodeType.MISSING;
 import static com.fasterxml.jackson.databind.node.JsonNodeType.NULL;
@@ -39,7 +40,7 @@ import static com.fasterxml.jackson.databind.node.JsonNodeType.NULL;
 public class JsonMatcher {
     static final ObjectMapper mapper = new ObjectMapper();
 
-    private final List<MatchError> errors = new ArrayList<>();
+    private List<MatchError> errors = new ArrayList<>();
 
     private final JsonNode matcherNode;
 
@@ -154,12 +155,18 @@ public class JsonMatcher {
         }
         boolean matches;
         if (matcher.startsWith("$")) {
-            try {
-                FieldMatcher<?> parseMatcher = parseMatcher(matcher);
-                matches = parseMatcher.matches(concrete, bindings);
-            } catch (UnboundVariableException e) {
-                errors.add(new MatchError(path, e.getVar() + " to be bound", "unbound"));
-                return false;
+            if (matcher.startsWith("$ID")) {
+                JsonNode objRef = PathExtractor.extractPrimitiveNode(matcher,bindings);
+                matches = matchPrimitive(path, (ValueNode)objRef, concreteNode);
+            }
+            else {
+                try {
+                    FieldMatcher<?> parseMatcher = parseMatcher(matcher);
+                    matches = parseMatcher.matches(concrete, bindings);
+                } catch (UnboundVariableException e) {
+                    errors.add(new MatchError(path, e.getVar() + " to be bound", "unbound"));
+                    return false;
+                }
             }
         } else if (matcher.startsWith("\\$")) {
             String test = matcher.substring(1);
@@ -285,6 +292,9 @@ public class JsonMatcher {
         else {
             List<JsonNode> leftToMatch = new ArrayList<>();
             concreteNode.elements().forEachRemaining(leftToMatch::add);
+            //The test matchings here are going to make a mess of our errors list so lets temporarily replace it
+            List<MatchError> realErrors = errors;
+            errors = new ArrayList<>();
             for (int i = 0; i < matcherSize - offset; i++) {
                 JsonNode matcherChild;
                 if (each) {
@@ -300,8 +310,12 @@ public class JsonMatcher {
                         break;
                     }
                 }
+                if (!isMatched) {
+                    realErrors.add(new MatchError(path, "an object matching "+matcherChild,"nothing matching"));
+                }
                 matches &= isMatched;
             }
+            errors = realErrors;
         }
         return matches;
     }
@@ -310,6 +324,7 @@ public class JsonMatcher {
         boolean result = true;
         boolean strictMode = false;
         List<String> matchedKeys = new ArrayList<>();
+        String id = null;
         for (Iterator<Map.Entry<String, JsonNode>> iterator = matcherNode.fields(); iterator.hasNext(); ) {
             Map.Entry<String, JsonNode> child = iterator.next();
             String key = child.getKey();
@@ -340,6 +355,10 @@ public class JsonMatcher {
                         errors.add(new MatchError(path, "size shoud be \"min-max\"", bounds));
                         return false;
                     }
+                }
+                if (key.equals("$ID")) {
+                    id = child.getValue().asText();
+                    continue;
                 }
                 //interpret this node as a matcher
                 FieldMatcher<?> matcher = parseMatcher(key);
@@ -386,6 +405,10 @@ public class JsonMatcher {
                 errors.add(new MatchError(path, "no additional values", concreteKeys.toString()));
                 result = false;
             }
+        }
+
+        if (result && id!=null) {
+            bindings.put(id, concreteNode);
         }
 
         return result;

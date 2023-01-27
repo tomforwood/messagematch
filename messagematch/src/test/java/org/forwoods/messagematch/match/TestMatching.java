@@ -1,6 +1,7 @@
 package org.forwoods.messagematch.match;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,6 +9,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -56,6 +58,22 @@ class TestMatching {
 		assertEquals(expected, matches);
 	}
 
+	@Test
+	public void testObjectRef() throws IOException {
+		String concrete = "concrete/"+"objects.json";
+		InputStream cin = TestMatching.class.getClassLoader().getResourceAsStream(concrete);
+		String matcher = "matchers/"+"objects.json";
+		InputStream min = TestMatching.class.getClassLoader().getResourceAsStream(matcher);
+		JsonMatcher jsonMatcher = new JsonMatcher(min, cin);
+		boolean matches = jsonMatcher.matches();
+		if (!matches) {
+			System.err.println(jsonMatcher.getErrors());
+		}
+		assertTrue(matches);
+		Object myObj = jsonMatcher.getBindings().get("myObj");
+		assertEquals("{\"fish\":\"trout\"}", myObj.toString());
+	}
+
 	static Stream<MatchingTest> getFiles() {
 		return Arrays.stream(tests);
 
@@ -84,8 +102,6 @@ class TestMatching {
 					" should " + (expectsMatch?"":"Not ") + "match " +
 					concreteFile;
 		}
-		
-		
 
 	}
 
