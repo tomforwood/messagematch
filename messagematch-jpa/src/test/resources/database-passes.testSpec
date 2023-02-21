@@ -1,0 +1,22 @@
+callUnderTest:
+  requestMessage:
+  responseMessage:
+  channel:
+    "@type": uri
+sideEffects:
+  - call:
+      channel:
+        "@type": "generic"
+        "typeName": "jpa"
+        action: SETUP
+        persister: org.forwoods.messagematch.jpa.project.MyRepo
+      requestMessage: [{id: 12, value: "test", valueInt: 1}]
+      responseMessage: ["myEnt"]
+  - call:
+      channel:
+        "@type": "generic"
+        "typeName": "jpa"
+        action: SETUP
+        persister: org.forwoods.messagematch.jpa.project.MyParentRepo
+      requestMessage: [ {"myEntity":{"$ID":"myEnt"} }]
+      responseMessage:

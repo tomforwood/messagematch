@@ -10,6 +10,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.support.KeyHolder;
 
 import java.util.*;
@@ -21,11 +23,11 @@ public class SpringJdbcTemplateBehaviourBuilder extends BehaviourBuilder<Generic
 
 
     private JdbcTemplate template;
+    private NamedParameterJdbcTemplate namedTemplate;
 
     final Map<CallExample<GenericChannel>, JavaType> calls = new HashMap<>();
 
     //This behaviour insists on being allowed to construct its own mock so it can set the default behaviour for any method
-    @SuppressWarnings({"deprecation", "unchecked"})
     public JdbcTemplate getTemplate() {
         if (template == null) {
             template= mock(JdbcTemplate.class, RETURNS_SMART_NULLS);
@@ -34,13 +36,21 @@ public class SpringJdbcTemplateBehaviourBuilder extends BehaviourBuilder<Generic
         return template;
     }
 
+    public NamedParameterJdbcTemplate getNamedTemplate() {
+        if (namedTemplate == null) {
+            namedTemplate= mock(NamedParameterJdbcTemplate.class, RETURNS_SMART_NULLS);
+
+        }
+        return namedTemplate;
+    }
+
     @Override
     protected Stream<TriggeredCall<GenericChannel>> filteredCalls(Collection<TriggeredCall<?>> calls) {
         Stream<TriggeredCall<GenericChannel>> rightChannel =  super.filteredCalls(calls);
         return rightChannel.filter(this::isTemplateCall);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "deprecation"})
     private void addMocking() {
         when(template.execute(anyString(), any(PreparedStatementCallback.class)))
                 .thenAnswer(new JDBCAnswer<>(calls,
@@ -70,6 +80,15 @@ public class SpringJdbcTemplateBehaviourBuilder extends BehaviourBuilder<Generic
         when(template.queryForObject(anyString(), any(Object[].class),any(Class.class))).thenAnswer(
                 new JDBCAnswer<>(calls, callsMatched, JDBCAnswer.STRING_QUERY_EXTRACTOR,
                         i->i.getArgument(1), JDBCAnswer.LIST_RESULT)
+        );
+
+        when(namedTemplate.query(anyString(), any(SqlParameterSource.class), any(RowMapper.class))).thenAnswer(
+                new JDBCAnswer<>(calls, callsMatched, JDBCAnswer.STRING_QUERY_EXTRACTOR,
+                        JDBCAnswer.namedParamExtractor(1), JDBCAnswer.LIST_RESULT)
+        );
+        when(namedTemplate.batchUpdate(anyString(), any(SqlParameterSource[].class))).thenAnswer(
+                new JDBCAnswer<>(calls, callsMatched, JDBCAnswer.STRING_QUERY_EXTRACTOR,
+                        JDBCAnswer.namedParamBatchExtractor(1), JDBCAnswer.LIST_RESULT)
         );
     }
 
@@ -108,6 +127,10 @@ public class SpringJdbcTemplateBehaviourBuilder extends BehaviourBuilder<Generic
                 break;
             case "int" :
                 JavaType type = TestSpec.specParser.getTypeFactory().constructType(Integer.TYPE);
+                calls.put(call.getCall(), type);
+                break;
+            case "int[]" :
+                type = TestSpec.specParser.getTypeFactory().constructArrayType(Integer.TYPE);
                 calls.put(call.getCall(), type);
                 break;
 

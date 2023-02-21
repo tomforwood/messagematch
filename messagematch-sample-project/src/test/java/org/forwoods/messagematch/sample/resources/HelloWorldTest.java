@@ -43,7 +43,7 @@ public class HelloWorldTest extends JerseyTest {
         return resourceConfig;
     }
 
-    @Mock(lenient = true)
+    @Mock(strictness = Mock.Strictness.LENIENT)
     MongoCollection<GreetingTemplate> collection;
 
     private MongoBehaviourBuilder mongo;

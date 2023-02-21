@@ -1,7 +1,9 @@
 package org.forwoods.messagematch.apachehttp;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.http.*;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;

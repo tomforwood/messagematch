@@ -1,0 +1,14 @@
+callUnderTest:
+  requestMessage:
+  responseMessage:
+  channel:
+    "@type": uri
+sideEffects:
+  - call:
+      channel:
+        "@type": "generic"
+        "typeName": "jpa"
+        action: CHECK
+        persister: org.forwoods.messagematch.jpa.project.MyRepo
+      requestMessage: [{value: "test", valueInt: 1}]
+      responseMessage: ["myEnt"]

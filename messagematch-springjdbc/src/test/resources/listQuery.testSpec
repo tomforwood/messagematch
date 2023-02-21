@@ -16,6 +16,17 @@ sideEffects:
         objectType : org.forwoods.messagematch.springjdbc.Pojo
       requestMessage: { "query":"Select * from pojos where key >= ? and key <= ?",  "params":[5, 6] }
       responseMessage: [{ "key":5, "stringVal":"hello world"}, { "key":6, "stringVal":"hello world"}]
+
+  - times:
+      min: 1
+    call:
+      channel:
+        "@type": "generic"
+        "typeName": "jdbcTemplate"
+        returns: list
+        objectType: org.forwoods.messagematch.springjdbc.Pojo
+      requestMessage: { "query": "Select * from pojos where key >= :p1 and key <= :p2",  "params": { p1: 5, p2: 6 } }
+      responseMessage: [ { "key": 5, "stringVal": "hello world" }, { "key": 6, "stringVal": "hello world" } ]
 #  - call:
 #      channel:
 #        "@type": "generic"

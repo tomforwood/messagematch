@@ -10,11 +10,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
 import java.sql.PreparedStatement;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,6 +27,7 @@ public class SpringJdbcTemplateBehaviourBuilderTest {
 
     final SpringJdbcTemplateBehaviourBuilder templateBehaviourBuilder = new SpringJdbcTemplateBehaviourBuilder();
     final JdbcTemplate template = templateBehaviourBuilder.getTemplate();
+    final NamedParameterJdbcTemplate namedTemplate = templateBehaviourBuilder.getNamedTemplate();
 
     @Test
     void queryForObject(@MessageSpec("src/test/resources/objectQuery") TestSpec spec) {
@@ -60,6 +64,18 @@ public class SpringJdbcTemplateBehaviourBuilderTest {
         p = template.query("Select * from pojos where key >= ? and key <= ?", (RowMapper<Pojo>)null, 5, 6);
         assertEquals("hello world", p.get(0).stringVal);
         assertEquals(2, p.size());
+
+    }
+
+    @Test
+    void queryForListNamedParams(@MessageSpec("src/test/resources/listQuery") TestSpec spec) {
+        templateBehaviourBuilder.addBehavior(spec.getSideEffects());
+
+        MapSqlParameterSource params = new MapSqlParameterSource(Map.of("p1","5", "p2",6));
+        List<Pojo> p = namedTemplate.query("Select * from pojos where key >= :p1 and key <= :p2", params, (rs, rowNum) -> null);
+        assertEquals("hello world", p.get(0).stringVal);
+        assertEquals(2, p.size());
+
 
     }
 

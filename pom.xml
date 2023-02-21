@@ -14,6 +14,8 @@
         <module>messagematch-springjdbc</module>
         <module>messagematch-server</module>
         <module>messagematch-sample-project</module>
+        <module>messagematch-database</module>
+        <module>messagematch-jpa</module>
     </modules>
     <packaging>pom</packaging>
     <name>Message Match</name>

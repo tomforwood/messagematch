@@ -1,0 +1,48 @@
+callUnderTest:
+  channel:
+    "@type": "generic"
+  requestMessage:
+  responseMessage:
+sideEffects:
+  # stuff to test
+  # 1. Read from scripted table
+  # 2. Read from unscripted table
+  # 3. Write to scripted table
+  # 4. Write to unscripted table
+  ######
+  - call:
+      channel:
+        "@type": "generic"
+        "typeName": "database"
+        "table": "scripted1"
+        "action": "READ"
+      requestMessage:
+      responseMessage: [["ABC", 1, 1.1]]
+  - call:
+      channel:
+        "@type": "generic"
+        "typeName": "database"
+        "table": "unscripted1"
+        "action": "READ"
+      requestMessage: ["col1", "col2","col3"]
+      responseMessage: [["ABC", 1, 1.1]]
+  - times:
+      min: 1
+    call:
+      channel:
+        "@type": "generic"
+        "typeName": "database"
+        "table": "scripted1"
+        "action": "WRITE"
+      requestMessage:
+      responseMessage: [["DEF", 2, 2.2]]
+  - times:
+      min: 1
+    call:
+      channel:
+        "@type": "generic"
+        "typeName": "database"
+        "table": "unscripted1"
+        "action": "WRITE"
+      requestMessage: ["col1", "col2","col3"]
+      responseMessage: [["DEF", 2, 2.2]]

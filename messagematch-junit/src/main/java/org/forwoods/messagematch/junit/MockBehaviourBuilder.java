@@ -63,6 +63,9 @@ public class MockBehaviourBuilder extends BehaviourBuilder<MethodCallChannel> {
                 return TestSpec.specParser.treeToValue(generate, jt);
             });
             T when1 = stubber.when(mock);
+            if (!(argumentValues instanceof ArrayNode)){
+                throw new RuntimeException("Arguments to mocks expected to be an array");
+            }
             invokeMethod(when1, (ArrayNode) argumentValues, paramsTypes, m, matchers);
 
         } catch (NoSuchMethodException e) {

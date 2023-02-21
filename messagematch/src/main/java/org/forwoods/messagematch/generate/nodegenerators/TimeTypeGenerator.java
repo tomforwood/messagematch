@@ -14,14 +14,14 @@ public class TimeTypeGenerator extends NodeGenerator {
 		provider.addConstraint(Constraint.timeConstraint(time));
 	}
 
-	private JsonNode parseDate(String genVal) {
-		try {
-			//try to read the supplied value as a ISO instant
-			LocalTime i=LocalTime.parse(genVal);
-			return JsonNodeFactory.instance.textNode(i.toString());
-		} catch (DateTimeParseException e) {}
-		throw new IllegalArgumentException("Provided value for localtime of " + genVal+ " could not be parsed");
-	}
+//	private JsonNode parseDate(String genVal) {
+//		try {
+//			//try to read the supplied value as a ISO instant
+//			LocalTime i=LocalTime.parse(genVal);
+//			return JsonNodeFactory.instance.textNode(i.toString());
+//		} catch (DateTimeParseException ignored) {}
+//		throw new IllegalArgumentException("Provided value for localtime of " + genVal+ " could not be parsed");
+//	}
 
 	@Override
 	public JsonNode generate() {

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.forwoods.messagematch.generate.JsonGenerator;
 import org.forwoods.messagematch.junit.BehaviourBuilder;
@@ -18,6 +17,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.support.KeyHolder;
 
 import java.sql.Connection;
@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -57,7 +58,7 @@ public class JDBCAnswer<T> implements Answer<T> {
         for (Map.Entry< CallExample<GenericChannel>, JavaType > entry : calls.entrySet()) {
             ObjectNode requestNode = (ObjectNode) entry.getKey().getRequestMessage();
             String queryToMatch = requestNode.get("query").asText();
-            ArrayNode paramsToMatch = (ArrayNode) requestNode.get("params");
+            JsonNode paramsToMatch = requestNode.get("params");
             boolean matches;
             if (queryToMatch.startsWith("^")) {
                 //treat this as a regex - sadly you can't get the names of named groups out of the pattern without reflection
@@ -68,8 +69,8 @@ public class JDBCAnswer<T> implements Answer<T> {
                 matches = queryToMatch.equals(query);
             }
             if (matches) {
-                Object[] objects = paramExtractor.extractParameters(invocation);
-                JsonNode paramsNode = TestSpec.specParser.valueToTree(objects);
+                Object parameters = paramExtractor.extractParameters(invocation);
+                JsonNode paramsNode = TestSpec.specParser.valueToTree(parameters);
                 JsonMatcher paraMatcher = new JsonMatcher(paramsToMatch, paramsNode);
                 if (paraMatcher.matches()) {
                     Map<String, Object> bindings = new HashMap<>(paraMatcher.getBindings());
@@ -92,7 +93,7 @@ public class JDBCAnswer<T> implements Answer<T> {
     }
 
     protected interface ParamExtractor {
-        Object[] extractParameters(InvocationOnMock invocation);
+        Object extractParameters(InvocationOnMock invocation);
     }
 
     protected final static QueryExtractor STRING_QUERY_EXTRACTOR = invocation -> invocation.getArgument(0).toString();
@@ -114,6 +115,27 @@ public class JDBCAnswer<T> implements Answer<T> {
             } catch (SQLException ignored) {
             }
             return null;
+        };
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    protected static ParamExtractor namedParamExtractor(int index) {
+        return invocation ->{
+            SqlParameterSource params = invocation.getArgument(index);
+            String[] parameterNames = params.getParameterNames();
+            return Arrays.stream(parameterNames).collect(Collectors.toMap(s->s, params::getValue));
+        };
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    protected static ParamExtractor namedParamBatchExtractor(int index) {
+        return invocation ->{
+            SqlParameterSource[] params = invocation.getArgument(index);
+            return Arrays.stream(params).map(ps->{
+                String[] parameterNames = ps.getParameterNames();
+                return Arrays.stream(parameterNames).collect(Collectors.toMap(s->s, ps::getValue));})
+                    .collect(Collectors.toList());
+
         };
     }
 

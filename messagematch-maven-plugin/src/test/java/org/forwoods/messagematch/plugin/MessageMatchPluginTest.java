@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +27,7 @@ class MessageMatchPluginTest {
 
 
     @Test
-    public void testAllSpecsRun() throws MojoExecutionException, IOException, InterruptedException {
+    public void testAllSpecsRun() throws MojoExecutionException {
         Resource res = new Resource();
         res.setDirectory("src/test/resources/successs");
         plugin.setResourceDirs(List.of(res));
