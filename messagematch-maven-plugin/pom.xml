@@ -54,7 +54,7 @@
         <dependency><!--used to bring in URITemplate-->
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>5.3.1</version>
+            <version>6.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
