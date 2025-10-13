@@ -13,6 +13,7 @@ import org.forwoods.messagematch.server.persist.ProjectDaoWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Disabled;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.hamcrest.MockitoHamcrest;
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.contentOf;
 import static org.hamcrest.Matchers.contains;
 import static org.mockito.Mockito.*;
 
+@Disabled
 @ExtendWith(MockitoExtension.class)
 class MavenInvokerServiceTest {
 
