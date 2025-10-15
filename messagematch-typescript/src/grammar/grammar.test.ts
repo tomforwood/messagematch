@@ -1,7 +1,7 @@
 import { CharStream, CommonTokenStream } from 'antlr4';
 import { expect, test } from 'vitest'
-import MatcherLexer from '../../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherLexer.js';
-import MatcherParser from '../../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser.js';
+import MatcherLexer from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherLexer.js';
+import MatcherParser from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser.js';
 import { describe } from 'node:test';
 
 function parseWithListener(input: string): void {
