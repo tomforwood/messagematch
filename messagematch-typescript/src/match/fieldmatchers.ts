@@ -1,9 +1,64 @@
-export interface FieldMatcher<T=any> {
-  matches(actual: any, bindings: Map<string, any>): boolean;
+import { Interface } from "readline";
+
+export abstract class FieldMatcher<T> {
+  
+  constructor(private binding: string | null, private nullable:boolean, private comparator: FieldComparator<T>){
+
+  }
+
+  
+  matches(actual: string, bindings: Map<string, any>): boolean
+  {
+    if (this.binding!=null) {
+			const existing = bindings.get(this.binding);
+			if (existing!=null) {
+				if (this.notEqual(actual, existing)) {
+					return false;
+				}
+			}
+			bindings.set(this.binding, actual);
+		}
+		if (actual==null) return this.nullable;
+		let match = this.doMatch(actual);
+		if (this.comparator!=null) {
+			match = this.comparator.match(this.asComparable(value), bindings, this);
+		}
+		return match ;
+  }
+
+  abstract doMatch(value:string): boolean;
+  abstract asComparable(val:string):T;
+
+  private notEqual(value: string, existing: any): boolean {
+		if (existing instanceof String) return !existing.equals(value);
+		if (existing instanceof Date) {
+			//the value can be represented a ms or ISO 8601
+				const ms = Number(value);
+        if (isNaN(ms))
+        {
+          return !(existing.toString() === value);
+        }
+				const epochMilli = existing.getTime();
+				return ms != epochMilli;
+			}
+		return false;
+	}
 }
 
-export class IntTypeMatcher implements FieldMatcher {
-  constructor(private binding: string | null, private nullable: boolean, private comparator: any) {}
+export class FieldComparator<T=any>{
+  constructor(final op: string, final val: ValOrVar, eta: string){}
+  
+
+  
+}
+
+export class ValOrVar {
+}
+
+export class IntTypeMatcher extends FieldMatcher<bigint> {
+  constructor(binding: string | null, nullable: boolean, comparator: FieldComparator<bigint>) {
+    super(binding, nullable, comparator);
+  }
   matches(actual: any) {
     if (actual==null) return this.nullable;
     return /^-?\d+$/.test(String(actual));
