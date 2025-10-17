@@ -1,7 +1,7 @@
 import { FieldMatcher } from './fieldmatchers';
 
 // Port of Java InstantTypeMatcher. Uses Date objects for comparables.
-export class InstantTypeMatcher implements FieldMatcher {
+export class InstantTypeMatcher extends FieldMatcher<Date> {
   // parses: string -> Date
   private static parses: (s: string) => Date = (s: string) => {
     // try ISO-8601 or other text parse
@@ -13,12 +13,23 @@ export class InstantTypeMatcher implements FieldMatcher {
     throw new Error('cannot parse instant ' + s);
   };
 
-  constructor(private binding: string | null, private nullable: boolean, private comparator: any) {}
+  constructor(binding: string | null, nullable: boolean, comparator: any) {
+    super(binding, nullable, comparator);
+  }
 
-  matches(actual: any, _bindings?: Map<string, any>): boolean {
-    if (actual == null) return this.nullable;
+  protected asComparable(val: string): Date {
     try {
-      const d = InstantTypeMatcher.parses(String(actual));
+      return InstantTypeMatcher.parses(val);
+    } catch (e) {
+      // if parse throws, try numeric millis
+      const ms = Number(val);
+      return new Date(ms);
+    }
+  }
+
+  protected doMatch(value: string): boolean {
+    try {
+      const d = InstantTypeMatcher.parses(String(value));
       return !isNaN(d.getTime());
     } catch (e) {
       return false;
