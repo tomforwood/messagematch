@@ -15,7 +15,6 @@
         <module>messagematch-sample-project</module>
         <module>messagematch-database</module>
         <module>messagematch-jpa</module>
-        <module>messagematch-typescript</module>
         <module>messagematch-server</module>
     </modules>
     <packaging>pom</packaging>

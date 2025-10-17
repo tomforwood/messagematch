@@ -17,7 +17,7 @@ export class InstantTypeMatcher extends FieldMatcher<Date> {
     super(binding, nullable, comparator);
   }
 
-  protected asComparable(val: string): Date {
+  public asComparable(val: string): Date {
     try {
       return InstantTypeMatcher.parses(val);
     } catch (e) {

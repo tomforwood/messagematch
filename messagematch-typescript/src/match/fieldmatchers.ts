@@ -3,9 +3,9 @@ import {ValOrVarContext, ComparatorContext} from '../antlr4ts/org/forwoods/messa
 export abstract class FieldMatcher<T> {
   protected binding: string | null;
   protected nullable: boolean;
-  protected comparator: any | null;
+  protected comparator: FieldComparatorMatcher | null;
 
-  constructor(binding: string | null, nullable: boolean, comparator: any | null) {
+  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
     this.binding = binding;
     this.nullable = nullable;
     this.comparator = comparator;
@@ -24,14 +24,13 @@ export abstract class FieldMatcher<T> {
     if (actual == null) return this.nullable;
     let match = this.doMatch(actual);
     if (this.comparator != null) {
-      // comparator is expected to provide a match(...) method (FieldComparatorMatcher)
       match = this.comparator.match(this.asComparable(actual), bindings, this);
     }
     return match;
   }
 
   protected abstract doMatch(value: string): boolean;
-  protected abstract asComparable(val: string): T;
+  abstract asComparable(val: string): T;
 
   // range comparators used by FieldComparatorMatcher
   public abstract doSymRange(value: T, compareTo: T, s: string): boolean;
@@ -50,7 +49,7 @@ export abstract class FieldMatcher<T> {
       const epochMilli = existing.getTime();
       return ms !== epochMilli;
     }
-    return false;
+    return value?.toString() !== existing.toString();
   }
 }
 
@@ -90,7 +89,7 @@ export class FieldComparator<T = any> {
   constructor(comp: ComparatorContext) {
     this.op = comp._op.text;
     this.val = new ValOrVar(comp._val);
-      this.eta = comp?._eta.text;
+      this.eta = comp?._eta?.text;
   }
 
   protected vvToComp<U>(value: U, bindings: Map<string, any>, converter: (s: string) => U): U {
@@ -122,18 +121,17 @@ export class FieldComparator<T = any> {
 }
 
 export class FieldComparatorMatcher extends FieldComparator {
-  constructor(comp: any) {
+  constructor(comp: ComparatorContext) {
     super(comp);
   }
 
-  public match<T = any>(value: T, bindings: Map<string, any>, matcher: any): boolean {
-    // matcher.asComparable will convert string literals to T
+  public match<T = any>(value: T, bindings: Map<string, any>, matcher: FieldMatcher<T>): boolean {
     const f = (s: string) => matcher.asComparable(s) as T;
     const compareTo = this.vvToComp<T>(value, bindings, f);
     return FieldComparatorMatcher.compare(value, matcher, compareTo, this.op, this.eta);
   }
 
-  public static compare<T>(value: T, matcher: any, compareTo: T, op: string, eta: string | null): boolean {
+  public static compare<T>(value: T, matcher: FieldMatcher<T>, compareTo: T, op: string, eta: string | null): boolean {
     switch (op) {
       case '++':
         return matcher.doASymRange(value, compareTo, eta || '0');
@@ -144,9 +142,9 @@ export class FieldComparatorMatcher extends FieldComparator {
     }
   }
 
-  public static basicComp<T>(val: any, compareVal: any, op: string): boolean {
+  public static basicComp<T>(val: T, compareVal: T, op: string): boolean {
     // assume val has compareTo semantics via JS comparison
-    if (val === null || compareVal === null) return false;
+    if (val == null || compareVal == null) return false;
     // For numbers and dates and BigInt we can compare using <,>,==
     switch (op) {
       case '>':
@@ -165,11 +163,10 @@ export class FieldComparatorMatcher extends FieldComparator {
 
 export class IntTypeMatcher extends FieldMatcher<bigint> {
   static intPattern = /^-?\d+$/;
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparator<bigint> | null) {
+  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
     super(binding, nullable, comparator);
   }
-  protected asComparable(val: string): bigint {
-    // use BigInt for integer comparison
+  public asComparable(val: string): bigint {
     return BigInt(val);
   }
 
@@ -200,10 +197,10 @@ export class IntTypeMatcher extends FieldMatcher<bigint> {
 
 export class NumTypeMatcher extends FieldMatcher<number> {
   static numPattern = /^-?[0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?$/;
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparator<number> | null) {
+  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
     super(binding, nullable, comparator);
   }
-  protected asComparable(val: string): number {
+  public asComparable(val: string): number {
     return Number(val);
   }
   protected doMatch(value: string): boolean {
@@ -230,10 +227,10 @@ export class NumTypeMatcher extends FieldMatcher<number> {
 }
 
 export class StringTypeMatcher extends FieldMatcher<string> {
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparator<string> | null) {
+  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
     super(binding, nullable, comparator);
   }
-  protected asComparable(val: string): string {
+  public asComparable(val: string): string {
     return val;
   }
   protected doMatch(value: string): boolean {
@@ -249,24 +246,55 @@ export class StringTypeMatcher extends FieldMatcher<string> {
 
 export class RegExpMatcher extends FieldMatcher<string> {
   private re: RegExp;
-  constructor(pattern: string, binding: string | null, nullable: boolean, comparator: FieldComparator<string> | null) {
+  constructor(pattern: string, binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher| null) {
     super(binding, nullable, comparator);
     this.re = new RegExp(pattern);
   }
-  protected asComparable(val: string): string { return val; }
+  public asComparable(val: string): string { return val; }
   protected doMatch(value: string): boolean { return this.re.test(String(value)); }
   public doSymRange(_: string, __: string, ___: string): boolean { throw new Error("Unsupported"); }
   public doASymRange(_: string, __: string, ___: string): boolean { throw new Error("Unsupported"); }
 }
 
 export class BoolTypeMatcher extends FieldMatcher<boolean> {
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparator<boolean> | null) {
+  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
     super(binding, nullable, comparator);
   }
-  protected asComparable(val: string): boolean { return val === 'true' || val === 'True' || val === '1'; }
+  public asComparable(val: string): boolean { return val === 'true' || val === 'True' || val === '1'; }
   protected doMatch(value: string): boolean {
     return value === 'true' || value === 'false' || value === 'True' || value === 'False' || value === '1' || value === '0';
   }
   public doSymRange(_: boolean, __: boolean, ___: string): boolean { throw new Error('Unsupported'); }
   public doASymRange(_: boolean, __: boolean, ___: string): boolean { throw new Error('Unsupported'); }
+}
+
+export class TimeTypeMatcher extends FieldMatcher<number> {
+  static numPattern = /^-?[0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?$/;
+  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher) {
+    super(binding, nullable, comparator);
+  }
+  public asComparable(val: string): number {
+    return Number(val);
+  }
+  protected doMatch(value: string): boolean {
+    return NumTypeMatcher.numPattern.test(value);
+  }
+  public doSymRange(value: number, compareTo: number, s: string): boolean {
+    const range = Math.abs(Number(s));
+    const diff = Math.abs(compareTo - value);
+    return diff <= range;
+  }
+  public doASymRange(value: number, compareTo: number, s: string): boolean {
+    const range = Number(s);
+    let min: number;
+    let max: number;
+    if (range < 0) {
+      min = compareTo + range;
+      max = compareTo;
+    } else {
+      min = compareTo;
+      max = compareTo + range;
+    }
+    return value >= min && value <= max;
+  }
 }

@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import MatcherLexer from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherLexer.js';
 import MatcherParser from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser.js';
 import GrammarListenerMatcher from './GrammarListenerMatcher';
+import {FieldMatcher, UnboundVariableException} from "./fieldmatchers";
 
 // Lightweight stand-ins for the Java classes used in original
 export type JsonNode = any;
@@ -16,16 +17,12 @@ export class MatchError {
 	toString() { return `Error at ${this.path} expected matching ${this.expected} but was ${this.actual}`; }
 }
 
-export interface FieldMatcher<T=any> {
-	matches(actual: any, bindings: Map<string, any>): boolean;
-}
-
 export class JsonMatcher {
 	static sizePattern = /([0-9]*)-([0-9]*)/;
 
 	private errors: MatchError[] = [];
 	private bindings: Map<string, any> = new Map();
-	private matchTime = -1;
+	matchTime = -1;
 
 	constructor(private matcherNode: JsonNode, private concreteNode: JsonNode) {}
 
@@ -92,7 +89,8 @@ export class JsonMatcher {
 					const fm = this.parseMatcher(matcherStr);
 					matches = fm.matches(concrete, this.bindings);
 				} catch (e:any) {
-					this.errors.push(new MatchError(path, String(e.message || e), 'error'));
+					if (e instanceof UnboundVariableException) {}
+					this.errors.push(new MatchError(path, (e as UnboundVariableException).varName + " to be bound", 'unbound'));
 					return false;
 				}
 			}
@@ -103,11 +101,12 @@ export class JsonMatcher {
 			matches = matcherStr === concreteStr;
 		}
 
-		if (!matches) this.errors.push(new MatchError(path, matcherStr, String(concrete)));
+		if (!matches)
+			this.errors.push(new MatchError(path, matcherStr, String(concrete)));
 		return matches;
 	}
 
-	private parseMatcher(matcher: string): FieldMatcher {
+	private parseMatcher(matcher: string): FieldMatcher<any> {
 		// Use antlr4 generated lexer/parser to build a matcher listener
 		const antlr4 = require('antlr4');
 		const chars = new antlr4.InputStream(matcher);
@@ -123,10 +122,9 @@ export class JsonMatcher {
 		});
 		// Use the GrammarListenerMatcher to build a FieldMatcher
 		const listener = new GrammarListenerMatcher();
-		// parser.addParseListener is the ANTLR runtime method; generated TS parser has addParseListener
-		if ((parser as any).addParseListener) {
-			(parser as any).addParseListener(listener);
-		}
+
+		parser.addParseListener(listener);
+
 		parser.matcher();
 		if (!listener.result) throw new Error('cant parse matcher ' + matcher);
 		return listener.result;
@@ -148,17 +146,22 @@ export class JsonMatcher {
 	private matchObject(path: JsonPath, matcherNode: {[k:string]: any}, concreteNode: {[k:string]: any}): boolean {
 		let result = true;
 		const matchedKeys: string[] = [];
+		let strictMode = false;
 		let id: string|undefined;
 
 		for (const key of Object.keys(matcherNode)) {
 			const child = matcherNode[key];
 			let matchedNodes: {[k:string]: any} = {};
 			if (key.startsWith('$')) {
-				if (key === '$Strict') { continue; }
+				if (key === '$Strict') {
+					strictMode = true;
+					continue;
+				}
 				if (key === '$Size') {
 					const bounds = String(child);
 					const m = JsonMatcher.sizePattern.exec(bounds);
 					if (!m) { this.errors.push(new MatchError(path, 'size should be "min-max"', bounds)); return false; }
+					throw new Error("Not implemented this")
 					continue;
 				}
 				if (key === '$ID') { id = child; continue; }
@@ -187,6 +190,7 @@ export class JsonMatcher {
 			}
 		}
         //TODO handle $Strict mode to check for unexpected keys
+		if (strictMode) {}
 
 		if (result && id) this.bindings.set(id, concreteNode);
 		return result;

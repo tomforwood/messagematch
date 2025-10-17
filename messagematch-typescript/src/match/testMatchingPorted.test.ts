@@ -42,11 +42,11 @@ describe('TestMatching ported (TS)', () => {
         const concrete = loadResource(`concrete/${t.concreteFile}.json`);
         const jm = new JsonMatcher(matcher, concrete);
         // make time deterministic as in Java test
-        (jm as any).matchTime = 1636044195000;
+        jm.matchTime = 1636044195000;
         const matches = jm.matches();
         if (t.error || jm.getErrors().length>0) {
             const errors = jm.getErrors().map(e => e.toString());
-            expect(errors, errors.toString()).toContain(t.error);
+            expect(errors).toContain(t.error);
         }
         expect(matches).toBe(t.expectsMatch);
     });

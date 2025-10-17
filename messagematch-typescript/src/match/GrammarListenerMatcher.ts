@@ -1,28 +1,26 @@
 import MatcherListener from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherListener.js';
-import { FieldMatcher, IntTypeMatcher, NumTypeMatcher, StringTypeMatcher, RegExpMatcher, BoolTypeMatcher } from './fieldmatchers';
+import {
+    FieldMatcher, IntTypeMatcher, NumTypeMatcher, StringTypeMatcher, RegExpMatcher, BoolTypeMatcher,
+    FieldComparatorMatcher
+} from './fieldmatchers';
 import InstantTypeMatcher from './InstantTypeMatcher';
 import DateTypeMatcher from './DateTypeMatcher';
 import TimeTypeMatcher from './TimeTypeMatcher';
+import {TypeMatcherContext} from "../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser";
 
 // Extend the generated base listener so we inherit enterEveryRule/exitEveryRule etc.
 export default class GrammarListenerMatcher extends MatcherListener {
-    public result: FieldMatcher | null = null;
+    public result: FieldMatcher<any> | null = null;
 
-    exitTypeMatcher = (ctx: any) => {
+    exitTypeMatcher = (ctx: TypeMatcherContext) => {
         // ANTLR TS generator stores tokens as Token objects on ctx (e.g. ctx._type_) which have a .text property
-        const type = (ctx._type_ && (ctx._type_.text || (ctx._type_.getText && ctx._type_.getText()))) || '';
+        const type =  ctx._type_.text;
         // binding() returns a BindingContext; its IDENTIFIER() is a TerminalNode with getText()
-        const binding = (ctx.binding && ctx.binding() && ctx.binding().IDENTIFIER && ctx.binding().IDENTIFIER()) ? ctx.binding().IDENTIFIER().getText() : null;
+        const binding = ctx.binding()?.IDENTIFIER().getText();
         const nullable = !!ctx._nullable;
         // comparator handling
-        let comparator = null;
-        if (ctx.comp) {
-            // comp() may be a function returning a context or a property
-            const compCtx = typeof ctx.comp === 'function' ? ctx.comp() : ctx.comp;
-            // FieldComparatorMatcher is in fieldmatchers but not exported here; import dynamically
-            const { FieldComparatorMatcher } = require('./fieldmatchers');
-            comparator = new FieldComparatorMatcher(compCtx);
-        }
+        let comparator = ctx._comp ? new FieldComparatorMatcher(ctx._comp) : null;
+
         switch (type) {
             case '$Int':
                 this.result = new IntTypeMatcher(binding, nullable, comparator);
