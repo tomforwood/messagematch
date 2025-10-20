@@ -22,6 +22,7 @@ export class JsonMatcher {
 
 	private errors: MatchError[] = [];
 	private bindings: Map<string, any> = new Map();
+	private options = new Set<string>();
 	matchTime = -1;
 
 	constructor(private matcherNode: JsonNode, private concreteNode: JsonNode) {}
@@ -30,7 +31,9 @@ export class JsonMatcher {
 		return JSON.parse(json);
 	}
 
-	hasOption(_opt: any): boolean { return false; }
+	hasOption(opt: string): boolean {
+		return this.options.has(opt);
+	}
 
 	matches(): boolean {
 		if (this.matchTime < 0) this.matchTime = Date.now();
@@ -131,16 +134,107 @@ export class JsonMatcher {
 	}
 
 	private matchArray(path: JsonPath, matcherNode: JsonNode[], concreteNode: JsonNode[]): boolean {
-		// simplified: require same length and match items in order
-		if (matcherNode.length !== concreteNode.length) {
-			this.errors.push(new MatchError(path, `an array of size ${matcherNode.length}`, `size ${concreteNode.length}`));
+		let matcherSize = matcherNode.length;
+		const concreteSize = concreteNode.length;
+
+		// special flags
+		let strict = this.hasOption('$Strict');
+		let unordered = this.hasOption('$Unordered');
+		let each = false;
+		let min = 0;
+		let max = Number.MAX_SAFE_INTEGER;
+		let offset = 0;
+		let hasSize = false;
+
+		if (matcherSize === 0) {
+			if (concreteSize === 0) return true;
+			this.errors.push(new MatchError(path, "an empty array", `size ${concreteSize}`));
 			return false;
 		}
-		let ok = true;
-		for (let i=0;i<matcherNode.length;i++) {
-			ok = this.matchesNode(new JsonPath('['+i+']', path), matcherNode[i], concreteNode[i]) && ok;
+
+		// look for special matching node
+		const n = matcherNode[0];
+		if (typeof n === 'object' && n !== null && !Array.isArray(n)) {
+			const keys = Object.keys(n);
+			if (keys.length > 0 && keys[0].startsWith('$')) {
+				// this is a "special" object
+				strict = '$Strict' in n;
+				unordered = '$Unordered' in n;
+				each = '$Each' in n;
+				const sizeNode = n['$Size'];
+				if (sizeNode !== undefined) {
+					hasSize = true;
+					const bounds = String(sizeNode);
+					const m = JsonMatcher.sizePattern.exec(bounds);
+					if (m) {
+						if (m[1].length > 0) {
+							min = parseInt(m[1], 10);
+						}
+						if (m[2].length > 0) {
+							max = parseInt(m[2], 10);
+						}
+					} else {
+						this.errors.push(new MatchError(path, "size should be \"min-max\"", bounds));
+						return false;
+					}
+				}
+				if (strict || unordered || each || hasSize) {
+					offset = 1;
+					matcherSize--;
+				}
+			}
 		}
-		return ok;
+
+		let matches = true;
+
+		if (concreteSize < matcherSize) {
+			this.errors.push(new MatchError(path, `an array of at least size ${matcherSize}`, String(concreteSize)));
+			return false;
+		}
+
+		if (strict && concreteSize > matcherSize) {
+			this.errors.push(new MatchError(path, `an array of exactly size ${matcherSize}`, String(concreteSize)));
+			matches = false;
+		}
+
+		if (concreteSize < min) {
+			this.errors.push(new MatchError(path, `an array of at least size ${min}`, String(concreteSize)));
+			matches = false;
+		}
+		if (concreteSize > max) {
+			this.errors.push(new MatchError(path, `an array of at most size ${max}`, String(concreteSize)));
+			matches = false;
+		}
+
+		if (!unordered) {
+			for (let i = 0; i < matcherSize; i++) {
+				const matcherChild = each ? matcherNode[offset] : matcherNode[i + offset];
+				const concreteChild = concreteNode[i];
+				matches = this.matchesNode(new JsonPath(`[${i}]`, path), matcherChild, concreteChild) && matches;
+			}
+		} else {
+			const leftToMatch = [...concreteNode];
+			// The test matchings here will mess up our errors list so temporarily replace it
+			const realErrors = this.errors;
+			this.errors = [];
+			for (let i = 0; i < matcherSize; i++) {
+				const matcherChild = each ? matcherNode[offset] : matcherNode[i + offset];
+				let isMatched = false;
+				for (let j = 0; j < leftToMatch.length; j++) {
+					isMatched = this.matchesNode(new JsonPath(`[${i}]`, path), matcherChild, leftToMatch[j]);
+					if (isMatched) {
+						leftToMatch.splice(j, 1);
+						break;
+					}
+				}
+				if (!isMatched) {
+					realErrors.push(new MatchError(path, `an object matching ${JSON.stringify(matcherChild)}`, "nothing matching"));
+				}
+				matches = isMatched && matches;
+			}
+			this.errors = realErrors;
+		}
+		return matches;
 	}
 
 	private matchObject(path: JsonPath, matcherNode: {[k:string]: any}, concreteNode: {[k:string]: any}): boolean {
@@ -161,16 +255,17 @@ export class JsonMatcher {
 					const bounds = String(child);
 					const m = JsonMatcher.sizePattern.exec(bounds);
 					if (!m) { this.errors.push(new MatchError(path, 'size should be "min-max"', bounds)); return false; }
-					throw new Error("Not implemented this")
+					throw new Error("Not implemented this");
 					continue;
 				}
 				if (key === '$ID') { id = child; continue; }
 				// matcher as key
-				// TODO: parse matcher key and find matching concrete keys
+				const matcher: FieldMatcher<any> = this.parseMatcher(key);
 				matchedNodes = {};
 				for (const k of Object.keys(concreteNode)) {
-					// naive: if key contains '*' treat as wildcard
-					if (key.includes('*') || k === key) matchedNodes[k] = concreteNode[k];
+					if (matcher.matches(k, this.bindings)) {
+						matchedNodes[k] = concreteNode[k];
+					}
 				}
 			} else if (key.startsWith('\\$')) {
 				const realKey = key.substring(1);
@@ -189,8 +284,19 @@ export class JsonMatcher {
 				}
 			}
 		}
-        //TODO handle $Strict mode to check for unexpected keys
-		if (strictMode) {}
+
+		if (strictMode) {
+			let concreteKeys:string[] = []; 
+			for (const key of Object.keys(concreteNode)) {
+				concreteKeys.push(key);
+			}
+			
+			concreteKeys = concreteKeys.filter(k=>!matchedKeys.includes(k));
+			if (concreteKeys.length>0) {
+				this.errors.push(new MatchError(path, 'no additional values', '['+concreteKeys.join(', ')+']'));
+				result = false;
+			}
+		}
 
 		if (result && id) this.bindings.set(id, concreteNode);
 		return result;
@@ -199,4 +305,3 @@ export class JsonMatcher {
 	getErrors(): MatchError[] { return this.errors; }
 	getBindings(): Map<string, any> { return this.bindings; }
 }
-

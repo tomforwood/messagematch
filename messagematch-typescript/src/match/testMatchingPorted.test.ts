@@ -46,7 +46,7 @@ describe('TestMatching ported (TS)', () => {
         const matches = jm.matches();
         if (t.error || jm.getErrors().length>0) {
             const errors = jm.getErrors().map(e => e.toString());
-            expect(errors).toContain(t.error);
+            expect(errors).toEqual([t.error]);
         }
         expect(matches).toBe(t.expectsMatch);
     });

@@ -360,7 +360,7 @@ public class JsonMatcher {
                     id = child.getValue().asText();
                     continue;
                 }
-                //interpret this node as a matcher
+                //interpret this key as a matcher expression!
                 FieldMatcher<?> matcher = parseMatcher(key);
                 matchedNodes = new LinkedHashMap<>();
                 for (Iterator<Entry<String, JsonNode>> citerator = concreteNode.fields(); citerator.hasNext(); ) {
