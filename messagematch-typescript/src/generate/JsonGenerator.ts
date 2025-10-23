@@ -36,7 +36,7 @@ export class JsonGenerator {
         const zonedDateTime = instant.toZonedDateTimeISO('UTC');
         const date = zonedDateTime.toPlainDate();
         const time = zonedDateTime.toPlainTime();
-        
+
         this.bindings['date'] = this.createValueProvider(date.toString());
         this.bindings['time'] = this.createValueProvider(time.toString());
         this.bindings['datetime'] = this.createValueProvider(this.genTime.toString());
@@ -48,7 +48,7 @@ export class JsonGenerator {
         if (typeof matcherNode === 'string' || typeof matcherNode === 'boolean' || typeof matcherNode === 'number') {
             return this.generatePrimitive(matcherNode);
         }
-        
+
         if (Array.isArray(matcherNode)) {
             return this.generateArray(matcherNode);
         }
@@ -67,20 +67,20 @@ export class JsonGenerator {
     // Stub implementations of helper methods - to be implemented later
     private generatePrimitive(matcherNode: any): NodeGenerator {
         const matcher = typeof matcherNode === 'object' ? matcherNode.asText?.() || matcherNode.toString() : matcherNode.toString();
-        
+
         if (matcher.startsWith('$ID')) {
             const bound = PathExtractor.extractPrimitiveNode(matcher, this.rawBindings);
             return new ReferenceGenerator(bound);
         }
-        
+
         if (matcher.startsWith('$')) {
             return this.parseMatcher(matcher);
         }
-        
+
         if (matcher.startsWith('\\$')) {
             return new LiteralGenerator(matcher.replace(/^\\\$/, '$'));
         }
-        
+
         return new LiteralGenerator(matcherNode);
     }
 

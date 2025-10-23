@@ -223,9 +223,8 @@ public class JsonMatcher {
         }
         //look for the special matching node
         JsonNode n = matcherNode.get(0);
-        if (n instanceof ObjectNode) {
-            ObjectNode on = (ObjectNode) n;
-            if (on.size() > 0) {
+        if (n instanceof final ObjectNode on) {
+            if (!on.isEmpty()) {
                 if (on.fieldNames().next().startsWith("$")) {
                     //this is a "special" object
                     strict = on.has("$Strict");
@@ -237,10 +236,10 @@ public class JsonMatcher {
                         String bounds = sizeNode.asText();
                         Matcher m = sizePattern.matcher(bounds);
                         if (m.matches()) {
-                            if (m.group(1).length() > 0) {
+                            if (!m.group(1).isEmpty()) {
                                 min = Integer.parseInt(m.group(1));
                             }
-                            if (m.group(2).length() > 0) {
+                            if (!m.group(2).isEmpty()) {
                                 max = Integer.parseInt(m.group(2));
                             }
                         } else {
@@ -339,15 +338,15 @@ public class JsonMatcher {
                     String bounds = child.getValue().asText();
                     Matcher m = sizePattern.matcher(bounds);
                     if (m.matches()) {
-                        if (m.group(1).length() > 0) {
+                        if (!m.group(1).isEmpty()) {
                             int min = Integer.parseInt(m.group(1));
-                            if (concreteNode.size() > min) {
+                            if (concreteNode.size() < min) {
                                 errors.add(new MatchError(path, "at least " + min + " keys", Integer.toString(concreteNode.size())));
                             }
                         }
-                        if (m.group(2).length() > 0) {
+                        if (!m.group(2).isEmpty()) {
                             int max = Integer.parseInt(m.group(2));
-                            if (concreteNode.size() < max) {
+                            if (concreteNode.size() > max) {
                                 errors.add(new MatchError(path, "at most " + max + " keys", Integer.toString(concreteNode.size())));
                             }
                         }

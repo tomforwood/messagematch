@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import MatcherLexer from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherLexer.js';
 import MatcherParser from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser.js';
 import GrammarListenerMatcher from './GrammarListenerMatcher';
@@ -54,7 +53,7 @@ export class JsonMatcher {
 			return true;
 		}
 		if (typeof matcherNode === 'string' || typeof matcherNode === 'number' || typeof matcherNode === 'boolean') {
-			if (concreteNode === null || concreteNode === undefined) {
+			if (concreteNode === undefined) {
 				this.errors.push(new MatchError(path, 'a value node', String(concreteNode)));
 				return false;
 			}
@@ -90,11 +89,15 @@ export class JsonMatcher {
 			} else {
 				try {
 					const fm = this.parseMatcher(matcherStr);
-					matches = fm.matches(concrete, this.bindings);
+					matches = fm.matches(concreteStr, this.bindings);
 				} catch (e:any) {
-					if (e instanceof UnboundVariableException) {}
-					this.errors.push(new MatchError(path, (e as UnboundVariableException).varName + " to be bound", 'unbound'));
-					return false;
+					if (e instanceof UnboundVariableException) {
+						this.errors.push(new MatchError(path, (e as UnboundVariableException).varName + " to be bound", 'unbound'));
+						return false;
+					}
+					else {
+						throw e;
+					}
 				}
 			}
 		} else if (matcherStr.startsWith('\\$')) {
@@ -255,8 +258,18 @@ export class JsonMatcher {
 					const bounds = String(child);
 					const m = JsonMatcher.sizePattern.exec(bounds);
 					if (!m) { this.errors.push(new MatchError(path, 'size should be "min-max"', bounds)); return false; }
-					throw new Error("Not implemented this");
-					continue;
+					if (m.groups && m.groups[1].length > 0) {
+						const min = parseInt(m.groups[1], 10);
+						if (concreteNode.size < min) {
+							this.errors.push(new MatchError(path, 'at least ' + min + ' keys', concreteNode.size));
+						}
+					}
+					if (m.groups && m.groups[2].length > 0) {
+						const max = parseInt(m.groups[2], 10);
+						if (concreteNode.size > max) {
+							this.errors.push(new MatchError(path, 'at most ' + max + ' keys', concreteNode.size));
+						}
+					}
 				}
 				if (key === '$ID') { id = child; continue; }
 				// matcher as key

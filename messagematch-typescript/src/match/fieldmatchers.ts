@@ -51,6 +51,13 @@ export abstract class FieldMatcher<T> {
     }
     return value?.toString() !== existing.toString();
   }
+
+  compare(value: T, compareTo: T): 1 | 0 | -1 {
+    if (value==compareTo) return 0;
+    if (value>compareTo) return 1;
+    if (value<compareTo) return -1;
+    return 0;
+  }
 }
 
 export class UnboundVariableException extends Error {
@@ -138,27 +145,24 @@ export class FieldComparatorMatcher extends FieldComparator {
       case '+-':
         return matcher.doSymRange(value, compareTo, eta || '0');
       default:
-        return FieldComparatorMatcher.basicComp(value, compareTo, op);
+        return FieldComparatorMatcher.basicComp(matcher.compare(value, compareTo), op);
     }
   }
 
-  public static basicComp<T>(val: T, compareVal: T, op: string): boolean {
-    // assume val has compareTo semantics via JS comparison
-    if (val == null || compareVal == null) return false;
-    // For numbers and dates and BigInt we can compare using <,>,==
-    switch (op) {
-      case '>':
-        return val > compareVal;
-      case '<':
-        return val < compareVal;
-      case '>=':
-        return val >= compareVal;
-      case '<=':
-        return val <= compareVal;
-      default:
-        return false;
-    }
-  }
+  public static basicComp<T>(comparisonResult: 1|0|-1, op: string): boolean {
+        switch (op) {
+          case '>':
+            return comparisonResult > 0;
+          case '<':
+            return comparisonResult < 0;
+          case '>=':
+            return comparisonResult >= 0;
+          case '<=':
+            return comparisonResult <= 0;
+          default:
+            return false;
+        }
+      }
 }
 
 export class IntTypeMatcher extends FieldMatcher<bigint> {
@@ -193,6 +197,8 @@ export class IntTypeMatcher extends FieldMatcher<bigint> {
     }
     return value >= min && value <= max;
   }
+
+
 }
 
 export class NumTypeMatcher extends FieldMatcher<number> {
@@ -266,35 +272,5 @@ export class BoolTypeMatcher extends FieldMatcher<boolean> {
   }
   public doSymRange(_: boolean, __: boolean, ___: string): boolean { throw new Error('Unsupported'); }
   public doASymRange(_: boolean, __: boolean, ___: string): boolean { throw new Error('Unsupported'); }
-}
 
-export class TimeTypeMatcher extends FieldMatcher<number> {
-  static numPattern = /^-?[0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?$/;
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher) {
-    super(binding, nullable, comparator);
-  }
-  public asComparable(val: string): number {
-    return Number(val);
-  }
-  protected doMatch(value: string): boolean {
-    return NumTypeMatcher.numPattern.test(value);
-  }
-  public doSymRange(value: number, compareTo: number, s: string): boolean {
-    const range = Math.abs(Number(s));
-    const diff = Math.abs(compareTo - value);
-    return diff <= range;
-  }
-  public doASymRange(value: number, compareTo: number, s: string): boolean {
-    const range = Number(s);
-    let min: number;
-    let max: number;
-    if (range < 0) {
-      min = compareTo + range;
-      max = compareTo;
-    } else {
-      min = compareTo;
-      max = compareTo + range;
-    }
-    return value >= min && value <= max;
-  }
 }
