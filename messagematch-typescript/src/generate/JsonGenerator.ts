@@ -5,6 +5,11 @@ import { NodeGenerator } from './nodegenerators/NodeGenerator';
 import { LiteralGenerator } from './nodegenerators/LiteralGenerator';
 import { ReferenceGenerator } from './nodegenerators/ReferenceGenerator';
 import { PathExtractor } from './utils/PathExtractor';
+import {ObjectTypeGenerator} from "./nodegenerators/ObjectTypeGenerator";
+import MatcherLexer from "../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherLexer";
+import MatcherParser from "../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser";
+import {GrammarListenerGenerator} from "./GrammarListenerGenerator";
+import {ArraySizeGenerator, ArrayTypeGenerator} from "./nodegenerators/ArrayTypeGenerator";
 
 export class JsonGenerator {
     // genTime can be set by tests to make generation deterministic
@@ -23,8 +28,25 @@ export class JsonGenerator {
     }
 
     private parseMatcher(matcher: string): NodeGenerator {
-        // Stub implementation - to be completed later
-        return new LiteralGenerator(matcher);
+        const antlr4 = require('antlr4');
+        const chars = new antlr4.InputStream(matcher);
+        const lexer = new MatcherLexer(chars);
+        const tokens = new antlr4.CommonTokenStream(lexer);
+        const parser = new MatcherParser(tokens);
+        // throw on syntax errors
+        parser.removeErrorListeners();
+        parser.addErrorListener({
+            syntaxError(_recognizer:any, _offendingSymbol:any, line:number, _charPos:number, msg:string) {
+                throw new Error(`failed to parse at line ${line} due to ${msg}`);
+            }
+        });
+        const grammarListenerGenerator = new GrammarListenerGenerator(this.bindings);
+        parser.addParseListener(grammarListenerGenerator);
+        parser.matcher();
+        if (!grammarListenerGenerator.result) {
+            throw new Error("Parsing of grammar failed");
+        }
+        return grammarListenerGenerator.result;
     }
 
     generate(): any {
@@ -64,7 +86,6 @@ export class JsonGenerator {
         return this.generateLiteral(matcherNode);
     }
 
-    // Stub implementations of helper methods - to be implemented later
     private generatePrimitive(matcherNode: any): NodeGenerator {
         const matcher = typeof matcherNode === 'object' ? matcherNode.asText?.() || matcherNode.toString() : matcherNode.toString();
 
@@ -85,21 +106,53 @@ export class JsonGenerator {
     }
 
     private generateArray(arr: any[]): NodeGenerator {
-        return {
-            generate: () => []
-        };
+        const arrayGen = new ArrayTypeGenerator();
+        let sizeGen:ArraySizeGenerator | undefined
+        arr.forEach(item => {
+            const generate:NodeGenerator = this.generateNode(item);
+            if (generate instanceof ArraySizeGenerator) {
+               sizeGen = generate as ArraySizeGenerator;
+            } else {
+                arrayGen.addChild(generate);
+            }
+        });
+        if (!!sizeGen) {
+            arrayGen.setSize(sizeGen.min, sizeGen.max);
+        }
+        return arrayGen;
     }
 
-    private generateObject(obj: Record<string, any>): NodeGenerator {
-        return {
-            generate: () => ({})
-        };
+    private sizePattern = /([0-9]*)-([0-9]*)/g;
+    private generateObject(matcherNode: any): NodeGenerator {
+        const objectTypeGenerator:any = new ObjectTypeGenerator();
+        let ownPropertyNames:string[] = Object.getOwnPropertyNames(matcherNode);
+        for (let k of ownPropertyNames) {
+            let value = matcherNode[k];
+            if (k == "$Strict") continue;
+            if (k == "$Size") {
+                let bounds:string = value;
+                let match = this.sizePattern.exec(bounds);
+                if (match)
+                {
+                    var min = Number(match[1]);
+                    var max = Number(match[2]);
+                    return new ArraySizeGenerator(min, max)
+                }
+                return new ArraySizeGenerator();
+            }
+            if (k == "$ID") continue; //TODO implement this
+            if (k.startsWith("$")) {
+                const gen = this.parseMatcher(k);
+                const kenKey = gen.generate();
+                k = kenKey;
+            }
+            objectTypeGenerator.addChild(k, this.generateNode(value));
+        }
+        return objectTypeGenerator;
     }
 
     private generateLiteral(value: any): NodeGenerator {
-        return {
-            generate: () => value
-        };
+        return new LiteralGenerator(value);
     }
 
     private createValueProvider(val: string): ValueProvider {

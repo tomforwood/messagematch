@@ -1,7 +1,9 @@
 import { NodeGenerator } from './NodeGenerator';
 
-export class LiteralGenerator implements NodeGenerator {
-    constructor(private value: any) {}
+export class LiteralGenerator extends NodeGenerator {
+    constructor(private value: any) {
+        super(undefined);
+    }
 
     generate(): any {
         return this.value;

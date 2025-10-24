@@ -2,6 +2,7 @@ import { expect, test, describe } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { JsonGenerator } from './JsonGenerator';
+import {JsonMatcher} from "../match/JsonMatcher";
 
 type GenerateTest = { matchFile: string, concreteFile: string };
 
@@ -19,7 +20,7 @@ const tests: GenerateTest[] = [
 
 function loadResource(path: string) {
     // repo root is two levels up from this directory inside messagematch-typescript
-    const repoRoot = resolve(__dirname, '../../');
+    const repoRoot = resolve(__dirname, '../../..');
     const full = `${repoRoot}/messagematch/src/test/resources/${path}`;
     return JSON.parse(readFileSync(full, 'utf8'));
 }
@@ -33,9 +34,9 @@ describe('TestGenerate ported (TS) - stubs', () => {
         gen.genTime = 1636044195000;
         const node = gen.generate();
 
-        // For now we only assert that the call completes and returns an object.
-        // Real assertions against `concrete` will be added once JsonGenerator is implemented.
-        expect(typeof node).toBe('object');
+        const jsonMatcher: JsonMatcher = new JsonMatcher(concrete, node);//notice order flipping here
+        let matches = jsonMatcher.matches();
+        expect(matches, jsonMatcher.getErrors().toString()).toBeTruthy();
     });
 
     test('testObjectRef (stubbed)', () => {

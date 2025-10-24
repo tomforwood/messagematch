@@ -177,7 +177,7 @@ public class JsonGenerator {
 			Map.Entry<String, JsonNode> child = iterator.next();
 			String key = child.getKey();
 			if (key.equals("$Strict")) continue;
-			if (key.equals("$Size")) {
+			if (key.equals("$Size")) { //This is a magic size object at the start of an array
 				JsonNode node = child.getValue();
 				String bounds = node.asText();
 				Matcher m = sizePattern.matcher(bounds);

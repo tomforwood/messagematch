@@ -157,6 +157,7 @@ public class JsonMatcher {
         if (matcher.startsWith("$")) {
             if (matcher.startsWith("$ID")) {
                 JsonNode objRef = PathExtractor.extractPrimitiveNode(matcher,bindings);
+                assert objRef != null;
                 matches = matchPrimitive(path, (ValueNode)objRef, concreteNode);
             }
             else {

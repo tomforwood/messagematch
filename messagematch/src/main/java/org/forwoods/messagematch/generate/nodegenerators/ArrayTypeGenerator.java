@@ -32,7 +32,7 @@ public class ArrayTypeGenerator extends NodeGenerator{
        if (min!=null && children.size()<min) {
            int additinalRequired = min-children.size();
            NodeGenerator toAdd = children.get(children.size()-1);
-           for (int i=0;i<=additinalRequired;i++) {
+           for (int i=0;i<additinalRequired;i++) {
                addChild(toAdd);
            }
        }
