@@ -6,6 +6,10 @@ import {FieldMatcher, UnboundVariableException} from "./fieldmatchers";
 // Lightweight stand-ins for the Java classes used in original
 export type JsonNode = any;
 
+// Types for bindings
+export type BindingValue = string | number | Date | JsonNode | null;
+export type Bindings = Record<string, BindingValue>;
+
 export class JsonPath {
 	constructor(public pathElement: string, public parent: JsonPath | null) {}
 	toString() { return this.parent ? `${this.parent}:${this.pathElement}` : this.pathElement; }
@@ -20,7 +24,7 @@ export class JsonMatcher {
 	static sizePattern = /([0-9]*)-([0-9]*)/;
 
 	private errors: MatchError[] = [];
-	private bindings: Map<string, any> = new Map();
+	private bindings: Bindings = {};
 	private options = new Set<string>();
 	matchTime = -1;
 
@@ -38,9 +42,9 @@ export class JsonMatcher {
 		if (this.matchTime < 0) this.matchTime = Date.now();
 		const i = this.matchTime;
 		const d = new Date(i);
-		this.bindings.set('date', d.toISOString().slice(0,10));
-		this.bindings.set('time', d.toISOString().slice(11,19));
-		this.bindings.set('datetime', this.matchTime);
+		this.bindings['date'] = d.toISOString().slice(0,10);
+		this.bindings['time'] = d.toISOString().slice(11,19);
+		this.bindings['datetime'] = this.matchTime;
 		return this.matchesNode(new JsonPath('root', null), this.matcherNode, this.concreteNode);
 	}
 
@@ -258,16 +262,17 @@ export class JsonMatcher {
 					const bounds = String(child);
 					const m = JsonMatcher.sizePattern.exec(bounds);
 					if (!m) { this.errors.push(new MatchError(path, 'size should be "min-max"', bounds)); return false; }
-					if (m.groups && m.groups[1].length > 0) {
-						const min = parseInt(m.groups[1], 10);
-						if (concreteNode.size < min) {
-							this.errors.push(new MatchError(path, 'at least ' + min + ' keys', concreteNode.size));
+					const concreteSize = Object.keys(concreteNode).length;
+					if (m[1] && m[1].length > 0) {
+						const min = parseInt(m[1], 10);
+						if (concreteSize < min) {
+							this.errors.push(new MatchError(path, 'at least ' + min + ' keys', String(concreteSize)));
 						}
 					}
-					if (m.groups && m.groups[2].length > 0) {
-						const max = parseInt(m.groups[2], 10);
-						if (concreteNode.size > max) {
-							this.errors.push(new MatchError(path, 'at most ' + max + ' keys', concreteNode.size));
+					if (m[2] && m[2].length > 0) {
+						const max = parseInt(m[2], 10);
+						if (concreteSize > max) {
+							this.errors.push(new MatchError(path, 'at most ' + max + ' keys', String(concreteSize)));
 						}
 					}
 				}
@@ -316,5 +321,5 @@ export class JsonMatcher {
 	}
 
 	getErrors(): MatchError[] { return this.errors; }
-	getBindings(): Map<string, any> { return this.bindings; }
+	getBindings(): Readonly<Bindings> { return this.bindings; }
 }

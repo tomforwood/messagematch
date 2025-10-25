@@ -1,25 +1,22 @@
 import {ValOrVarContext, ComparatorContext} from '../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser.js';
+import { Bindings } from './JsonMatcher';
 
 export abstract class FieldMatcher<T> {
-  protected binding: string | null;
-  protected nullable: boolean;
-  protected comparator: FieldComparatorMatcher | null;
+  constructor(
+    protected binding: string | null,
+    protected nullable: boolean,
+    protected comparator: FieldComparatorMatcher | null
+  ) {}
 
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
-    this.binding = binding;
-    this.nullable = nullable;
-    this.comparator = comparator;
-  }
-
-  matches(actual: string | null, bindings: Map<string, any>): boolean {
+  matches(actual: string | null, bindings: Bindings): boolean {
     if (this.binding != null) {
-      const existing = bindings.get(this.binding);
+      const existing = bindings[this.binding];
       if (existing != null) {
         if (this.notEqual(actual, existing)) {
           return false;
         }
       }
-      bindings.set(this.binding, actual);
+      bindings[this.binding] = actual;
     }
     if (actual == null) return this.nullable;
     let match = this.doMatch(actual);
@@ -53,7 +50,7 @@ export abstract class FieldMatcher<T> {
   }
 
   compare(value: T, compareTo: T): 1 | 0 | -1 {
-    if (value==compareTo) return 0;
+    if (value === compareTo) return 0;
     if (value>compareTo) return 1;
     if (value<compareTo) return -1;
     return 0;
@@ -61,10 +58,8 @@ export abstract class FieldMatcher<T> {
 }
 
 export class UnboundVariableException extends Error {
-  varName: string;
-  constructor(varName: string) {
+  constructor(public varName: string) {
     super(varName);
-    this.varName = varName;
     this.name = 'UnboundVariableException';
   }
 }
@@ -99,10 +94,10 @@ export class FieldComparator<T = any> {
       this.eta = comp?._eta?.text;
   }
 
-  protected vvToComp<U>(value: U, bindings: Map<string, any>, converter: (s: string) => U): U {
+  protected vvToComp<U>(value: U, bindings: Bindings, converter: (s: string) => U): U {
     let compareTo: U;
     if (this.val.variable != null) {
-      const varVal = bindings.get(this.val.variable);
+      const varVal = bindings[this.val.variable];
       if (varVal == null) throw new UnboundVariableException(this.val.variable);
       // if the variable value appears to be the same constructor/type as the provided value, use it directly
       try {
@@ -128,11 +123,9 @@ export class FieldComparator<T = any> {
 }
 
 export class FieldComparatorMatcher extends FieldComparator {
-  constructor(comp: ComparatorContext) {
-    super(comp);
-  }
+  // No custom constructor needed; use the base class constructor
 
-  public match<T = any>(value: T, bindings: Map<string, any>, matcher: FieldMatcher<T>): boolean {
+  public match<T = any>(value: T, bindings: Bindings, matcher: FieldMatcher<T>): boolean {
     const f = (s: string) => matcher.asComparable(s) as T;
     const compareTo = this.vvToComp<T>(value, bindings, f);
     return FieldComparatorMatcher.compare(value, matcher, compareTo, this.op, this.eta);
@@ -167,9 +160,7 @@ export class FieldComparatorMatcher extends FieldComparator {
 
 export class IntTypeMatcher extends FieldMatcher<bigint> {
   static intPattern = /^-?\d+$/;
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
-    super(binding, nullable, comparator);
-  }
+  // inherit constructor from FieldMatcher
   public asComparable(val: string): bigint {
     return BigInt(val);
   }
@@ -203,9 +194,7 @@ export class IntTypeMatcher extends FieldMatcher<bigint> {
 
 export class NumTypeMatcher extends FieldMatcher<number> {
   static numPattern = /^-?[0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?$/;
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
-    super(binding, nullable, comparator);
-  }
+  // inherit constructor from FieldMatcher
   public asComparable(val: string): number {
     return Number(val);
   }
@@ -233,9 +222,7 @@ export class NumTypeMatcher extends FieldMatcher<number> {
 }
 
 export class StringTypeMatcher extends FieldMatcher<string> {
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
-    super(binding, nullable, comparator);
-  }
+  // inherit constructor from FieldMatcher
   public asComparable(val: string): string {
     return val;
   }
@@ -263,9 +250,7 @@ export class RegExpMatcher extends FieldMatcher<string> {
 }
 
 export class BoolTypeMatcher extends FieldMatcher<boolean> {
-  constructor(binding: string | null, nullable: boolean, comparator: FieldComparatorMatcher | null) {
-    super(binding, nullable, comparator);
-  }
+  // inherit constructor from FieldMatcher
   public asComparable(val: string): boolean { return val === 'true' || val === 'True' || val === '1'; }
   protected doMatch(value: string): boolean {
     return value === 'true' || value === 'false' || value === 'True' || value === 'False' || value === '1' || value === '0';

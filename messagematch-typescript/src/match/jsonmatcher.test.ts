@@ -36,7 +36,7 @@ function loadResource(path: string) {
     return JSON.parse(readFileSync(full, 'utf8'));
 }
 
-describe('TestMatching ported (TS)', () => {
+describe('jsonmatcher (TS)', () => {
     test.each(tests)('Matcher %o', (t) => {
         const matcher = loadResource(`matchers/${t.matchFile}.json`);
         const concrete = loadResource(`concrete/${t.concreteFile}.json`);

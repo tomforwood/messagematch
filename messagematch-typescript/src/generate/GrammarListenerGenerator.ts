@@ -83,9 +83,9 @@ export class GrammarListenerGenerator extends MatcherListener{
 
 
     exitRegexpMatcher = (ctx: RegexpMatcherContext) => {
-        if (!ctx.binding())
-        {
-            var provider:ValueProvider = new ValueProvider();
+        let provider: ValueProvider;
+        if (!ctx.binding()) {
+            provider = new ValueProvider();
         } else {
             let binding = ctx.binding().IDENTIFIER().getText();
             provider = computeIfAbsent(this.bindings, binding, (b)=> new ValueProvider());

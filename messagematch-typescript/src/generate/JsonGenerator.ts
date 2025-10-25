@@ -122,7 +122,7 @@ export class JsonGenerator {
         return arrayGen;
     }
 
-    private sizePattern = /([0-9]*)-([0-9]*)/g;
+    private sizePattern = /([0-9]*)-([0-9]*)/;
     private generateObject(matcherNode: any): NodeGenerator {
         const objectTypeGenerator:any = new ObjectTypeGenerator();
         let ownPropertyNames:string[] = Object.getOwnPropertyNames(matcherNode);
@@ -130,13 +130,12 @@ export class JsonGenerator {
             let value = matcherNode[k];
             if (k == "$Strict") continue;
             if (k == "$Size") {
-                let bounds:string = value;
-                let match = this.sizePattern.exec(bounds);
-                if (match)
-                {
-                    var min = Number(match[1]);
-                    var max = Number(match[2]);
-                    return new ArraySizeGenerator(min, max)
+                const bounds: string = value;
+                const m = this.sizePattern.exec(bounds);
+                if (m) {
+                    const min = m[1] && m[1].length > 0 ? Number(m[1]) : undefined;
+                    const max = m[2] && m[2].length > 0 ? Number(m[2]) : undefined;
+                    return new ArraySizeGenerator(min, max);
                 }
                 return new ArraySizeGenerator();
             }
