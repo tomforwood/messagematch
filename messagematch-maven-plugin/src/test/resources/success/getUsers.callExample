@@ -1,4 +1,4 @@
 channel:
   "@type": "uri"
-  uri: "/users"
+  path: "/users"
   method: "get"

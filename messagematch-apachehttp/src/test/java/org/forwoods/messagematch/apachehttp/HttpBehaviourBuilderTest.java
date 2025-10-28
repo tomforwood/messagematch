@@ -35,7 +35,7 @@ class HttpBehaviourBuilderTest {
 
         TriggeredCall<URIChannel> call = new TriggeredCall<>(null, null,
                 null, null,
-                new URIChannel("/hello_world", "get"),
+                new URIChannel("/hello_world", "get", 200, ""),
                 request,
                 responseNode,
                 null);

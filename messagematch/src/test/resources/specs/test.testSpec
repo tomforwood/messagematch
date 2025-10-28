@@ -1,7 +1,7 @@
 callUnderTest:
   channel:
     "@type": uri
-    uri: /myService
+    path: /myService
     method: post
   requestMessage: {"data":"1"}
   responseMessage: {"result":"$Int"}

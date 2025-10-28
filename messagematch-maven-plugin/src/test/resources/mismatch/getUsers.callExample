@@ -1,5 +1,5 @@
 channel:
   "@type": "uri"
-  uri: "/user/abc"
+  path: "/user/abc"
   method: "get"
 schema : "classpath:mismatch/testApi.json"

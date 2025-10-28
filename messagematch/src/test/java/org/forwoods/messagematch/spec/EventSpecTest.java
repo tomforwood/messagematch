@@ -16,13 +16,13 @@ class EventSpecTest {
         TestSpec parent = TestSpec.specParser.readValue(resource, TestSpec.class);
         parent = parent.resolve(resource);
         assertNotNull(parent.getSideEffects().get(0).getCall().getChannel());
-        assertEquals("post:/myOtherService",parent.getSideEffects().get(0).getCall().getChannel().toString());
+        assertEquals("URIChannel{path='/myOtherService', method='post', statusCode=0, statusLine='null'}",parent.getSideEffects().get(0).getCall().getChannel().toString());
     }
 
     @Test
     public void specWriteTest() throws IOException {
         CallExample<URIChannel> call = new CallExample<>();
-        call.setChannel(new URIChannel("blah", "get"));
+        call.setChannel(new URIChannel("blah", "get", 200, "ok"));
 
         TestSpec spec = new TestSpec(call, List.of());
         String s= TestSpec.specParser.writeValueAsString(spec);
@@ -30,8 +30,8 @@ class EventSpecTest {
         ObjectMapper mapper = new ObjectMapper();
         s= mapper.writeValueAsString(spec);
         System.out.println(s);
-        //{"reference":null,"relative":null,"name":null,"channel":{"@type":"uri","uri":"blah","method":"get"},"requestMessage":null,"responseMessage":null,"schema":null}
-        s = "{\"callUnderTest\":{\"reference\":null,\"relative\":null,\"name\":null,\"channel\":{\"@type\":\"uri\",\"uri\":\"blah\",\"method\":\"get\"},\"requestMessage\":null,\"responseMessage\":null,\"schema\":null},\"sideEffects\":[]}";
+        //{"reference":null,"relative":null,"name":null,"channel":{"@type":"uri","path":"blah","method":"get"},"requestMessage":null,"responseMessage":null,"schema":null}
+        s = "{\"callUnderTest\":{\"reference\":null,\"relative\":null,\"name\":null,\"channel\":{\"@type\":\"uri\",\"path\":\"blah\",\"method\":\"get\"},\"requestMessage\":null,\"responseMessage\":null,\"schema\":null},\"sideEffects\":[]}";
         mapper.readValue(s, TestSpec.class);
 
     }

@@ -1,6 +1,6 @@
 channel:
   "@type": uri
-  uri: /myOtherService
+  path: /myOtherService
   method: post
 requestMessage: {"data":"1"}
 responseMessage: { result: "$Int"}

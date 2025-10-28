@@ -1,7 +1,7 @@
 callUnderTest:
   channel:
     "@type": "uri"
-    uri: "something"
+    path: "something"
     method: get
   requestMessage:
   responseMessage:

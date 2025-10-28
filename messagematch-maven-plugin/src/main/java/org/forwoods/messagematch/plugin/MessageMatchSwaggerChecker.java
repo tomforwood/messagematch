@@ -76,11 +76,11 @@ public class MessageMatchSwaggerChecker {
                     for(Map.Entry<PathItem.HttpMethod, Operation> operation: pathEntry.getValue().readOperationsMap().entrySet()) {
                         boolean matched;
                         List<URIChannel> uriMatches = specChannels.stream()
-                                .filter(c->template.matches(c.getUri()))
+                                .filter(c->template.matches(c.getPath()))
                                 .filter(c->c.getMethod().toUpperCase().equals(operation.getKey().toString()))
                                 .collect(Collectors.toList());
 
-                        matched = uriMatches.stream().map(c -> template.match(c.getUri()))
+                        matched = uriMatches.stream().map(c -> template.match(c.getPath()))
                                 .anyMatch(m -> matchPathParams(m, operation.getValue().getParameters(), new HashSet<>()));
                         if (!matched) {
                             Level l = levels.get(Validation.UNTESTED_ENDPOINT);
@@ -120,14 +120,14 @@ public class MessageMatchSwaggerChecker {
             new ResolverFully().resolveFully(openAPI);
             for (Map.Entry<String, PathItem> paths: openAPI.getPaths().entrySet()) {
                 UriTemplate template = new UriTemplate(paths.getKey());
-                if (template.matches(channel.getUri())) {
+                if (template.matches(channel.getPath())) {
                     matchedURI = true;
 
                     Set<Parameter> paramsMatched = new HashSet<>();
                     PathItem.HttpMethod httpMethod = PathItem.HttpMethod.valueOf(channel.getMethod().toUpperCase());
                     Operation op = paths.getValue().readOperationsMap().get(httpMethod);
                     if (op==null) continue;//openapi doesn't have the right verb
-                    Map<String, String> pathMatch = template.match(channel.getUri());
+                    Map<String, String> pathMatch = template.match(channel.getPath());
                     List<Parameter> parameters = new ArrayList<>();
                     if (op.getParameters()!=null) parameters.addAll(op.getParameters());
                     if (paths.getValue().getParameters()!=null) parameters.addAll(paths.getValue().getParameters());
@@ -144,7 +144,7 @@ public class MessageMatchSwaggerChecker {
                     JsonNode requestMessage = requestMessageRaw==null?null:generator.generate();
                     if (params!=null && params.size()>0) {
                         if (!(requestMessage instanceof ObjectNode)) {
-                            log.debug(channel.getUri() + " query params weren't supplied as a map of values");
+                            log.debug(channel.getPath() + " query params weren't supplied as a map of values");
                             continue;//if call asks for params they must be in the form of an array
                         }
                         boolean allMatch = true;
@@ -153,14 +153,14 @@ public class MessageMatchSwaggerChecker {
                             JsonNode paramVal = arrNode.get(parameter.getName());
                             if (paramVal == null && parameter.getRequired()) {
                                 allMatch = false;
-                                log.debug(channel.getUri() + " did not supply a value for the required parameter " + Json.pretty(parameter));
+                                log.debug(channel.getPath() + " did not supply a value for the required parameter " + Json.pretty(parameter));
                             }
                             else if (paramVal!=null) {
                                 allMatch &= new SchemaValidator(parameter.getSchema()).validate(paramVal);
                             }
                         }
                         if (!allMatch) {
-                            log.debug(channel.getUri() + "query params of "+ requestMessage + " did not match schema params of "+ Json.pretty(params));
+                            log.debug(channel.getPath() + "query params of "+ requestMessage + " did not match schema params of "+ Json.pretty(params));
                             continue;
                         }
                     }
@@ -175,7 +175,7 @@ public class MessageMatchSwaggerChecker {
                                 .map(v->v.validate(requestMessage))//if there eis a request body schema validate it
                                 .orElse(true);//If there is no request body schema then retuen true
                         if (!requestBodyMatch) {
-                            log.debug(channel.getUri() + "request body of "+ requestMessage +  " did not match schema body of "+Json.pretty(schema.get()));
+                            log.debug(channel.getPath() + "request body of "+ requestMessage +  " did not match schema body of "+Json.pretty(schema.get()));
                             continue;
                         }
                     }
@@ -186,7 +186,7 @@ public class MessageMatchSwaggerChecker {
                     SchemaValidator schemaValidator = new SchemaValidator(schema);
                     boolean responseMatch = schemaValidator.validate(call.getResponseMessage());
                     if (!responseMatch) {
-                        log.debug(channel.getUri() + "response body of "+ requestMessage +  " did not match schema body of "+Json.pretty(schema));
+                        log.debug(channel.getPath() + "response body of "+ requestMessage +  " did not match schema body of "+Json.pretty(schema));
                         continue;
                     }
 

@@ -1,7 +1,7 @@
 callUnderTest: # Not actually used in this test but can't be null  TODO
   channel:
     "@type": uri
-    uri: /myOtherService
+    path: /myOtherService
     method: post
   requestMessage: '{"data":"1"}'
   responseMessage: '{"result":"$Int"}'

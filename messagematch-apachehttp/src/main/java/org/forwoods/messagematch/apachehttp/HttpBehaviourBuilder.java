@@ -102,7 +102,7 @@ public class HttpBehaviourBuilder extends BehaviourBuilder<URIChannel> {
                 case "get":
                     HttpGet get = (HttpGet) argument;
                     URI u = get.getURI();
-                    if (!u.getPath().equals(channel.getUri())) return false;
+                    if (!u.getPath().equals(channel.getPath())) return false;
                     URIBuilder builder = new URIBuilder(u);
                     List<NameValuePair> queryParams = builder.getQueryParams();
                     Map<String, Object> map = queryParams.stream()
@@ -114,7 +114,7 @@ public class HttpBehaviourBuilder extends BehaviourBuilder<URIChannel> {
                 case "post" :
                     HttpPost post = (HttpPost) argument;
                     u = post.getURI();
-                    if (!u.getPath().equals(channel.getUri())) return false;
+                    if (!u.getPath().equals(channel.getPath())) return false;
                     try {
                         matcher = new JsonMatcher(call.getRequestMessage(),TestSpec.specParser.readTree(post.getEntity().getContent()));
                         return matcher.matches();
