@@ -201,3 +201,26 @@ buildNumber.properties
 
 # End of https://www.gitignore.io/api/java,maven,eclipse,intellij+all,visualstudiocode
 /messagematch/gen/
+
+# Node / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+
+# TypeScript
+dist/
+*.tsbuildinfo
+
+# Logs
+logs/
+
+
+# IDEs
+.vscode/
+
+# Coverage
+coverage/
+
+/messagematch-typescript/src/antlr4ts/

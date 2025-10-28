@@ -18,14 +18,14 @@ public class ArtifactDaoWrapper {
         return artifactDao.findByGroupIdAndArtifactId(groupId, artifactId);
     }
 
-    public <S extends Artifact> @Nonnull S save(@Nonnull S entity) {
+    public <S extends Artifact> S save(@Nonnull S entity) {
         //Check to see if it exists already
         S result = findByGroupIdAndArtifactId(entity.getGroupId(), entity.getArtifactId());
         if (result!=null) return result;
         return artifactDao.save(entity);
     }
 
-    public <S extends Artifact> @Nonnull Iterable<S> saveAll(Iterable<S> entities) {
+    public <S extends Artifact> Iterable<S> saveAll(Iterable<S> entities) {
         return StreamSupport.stream(entities.spliterator(), false).map(this::save).toList();
     }
 

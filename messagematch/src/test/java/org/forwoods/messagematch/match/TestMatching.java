@@ -18,7 +18,7 @@ class TestMatching {
 	static final MatchingTest[] tests = new MatchingTest[] {
 			new MatchingTest("int-type", "int-type", true),
 			new MatchingTest("types", "types", true),
-			new MatchingTest("int-type", "int-type-fail", false, "[Error at root:value expected matching $Int but was 1.0]"),
+			new MatchingTest("int-type", "int-type-fail", false, "[Error at root:value expected matching $Int but was 1.1]"),
 			new MatchingTest("regexp-basic", "regexp-basic-pass", true),
 			new MatchingTest("regexp-basic", "regexp-basic-fail", false, "[Error at root:value expected matching $^#[\\^0-9]*^,#abc but was 0]"),
 			new MatchingTest("comparators", "comparators", true),

@@ -12,7 +12,7 @@
     <artifactId>messagematch</artifactId>
 
     <properties>
-        <antlrVersion>4.10.1</antlrVersion>
+        <antlrVersion>4.13.2</antlrVersion>
     </properties>
 
     <dependencies>
@@ -33,6 +33,22 @@
                         <goals>
                             <goal>antlr4</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>exec2</id>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory> ${project.basedir}/../messagematch-typescript/src/antlr4ts</outputDirectory>
+                            <options>
+                                <language>
+
+                                    TypeScript
+                                </language>
+
+                            </options>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

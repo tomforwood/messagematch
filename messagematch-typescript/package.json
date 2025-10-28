@@ -1,0 +1,23 @@
+{
+  "name": "messagematch-typescript",
+  "version": "1.0.0",
+  "description": "TypeScript implementation of MessageMatch",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "rimraf": "^5.0.1",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
+    "antlr4": "^4.13.2"
+  }
+}
