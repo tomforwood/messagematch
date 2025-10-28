@@ -1,0 +1,43 @@
+{
+  "scenarioName": "numberStore",
+  "expectedStates": [
+    {
+      "expectedCalls": [
+        {
+          "channel": {
+            "@type": "uri",
+            "method": "GET",
+            "statusCode": 200,
+            "path": "/{$Int=accountId}/storedNumbers"
+          },
+          "requestMessage": null,
+          "responseMessage": []
+        }
+      ]
+    },
+    {
+      "stateTrigger": {
+        "channel": {
+          "@type": "uri",
+          "method": "PUT",
+          "statusCode": 200,
+          "path": "/{$Int=accountId}/storedNumbers"
+        },
+        "requestMessage": ["$Int<0=myVal"],
+        "responseMessage": ["$Int=myVal"]
+      },
+      "expectedCalls": [
+        {
+          "channel": {
+            "@type": "uri",
+            "method": "GET",
+            "statusCode": 200,
+            "path": "/{$Int=accountId}/storedNumbers"
+          },
+          "requestMessage": null,
+          "responseMessage": ["$Int=myVal"]
+        }
+      ]
+    }
+  ]
+}

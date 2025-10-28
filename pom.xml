@@ -12,10 +12,12 @@
         <module>messagematch-maven-plugin</module>
         <module>messagematch-mongo</module>
         <module>messagematch-springjdbc</module>
-        <module>messagematch-server</module>
-        <module>messagematch-sample-project</module>
-        <module>messagematch-database</module>
-        <module>messagematch-jpa</module>
+<!--        <module>messagematch-sample-project</module>-->
+<!--        <module>messagematch-database</module>-->
+<!--        <module>messagematch-jpa</module>-->
+<!--        <module>messagematch-server</module>-->
+        <module>messagematch-httpserver</module>
+        <module>messagematch-apiscenario</module>
     </modules>
     <packaging>pom</packaging>
     <name>Message Match</name>
@@ -45,14 +47,14 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>11</java.version>
+        <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.release>${java.version}</maven.compiler.release>
-        <jackson-core.version>2.13.1</jackson-core.version>
+        <jackson-core.version>2.14.2</jackson-core.version>
         <junit>5.8.2</junit>
         <!-- Plugin versions -->
-        <maven.compiler>3.8.1</maven.compiler>
+        <maven.compiler>3.11.0</maven.compiler>
     </properties>
 
     <dependencies>
@@ -69,7 +71,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.13.1</version>
+            <version>2.14.2</version>
         </dependency>
         <!-- Dependencies -->
         <!-- Testing dependencies -->
@@ -120,7 +122,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
