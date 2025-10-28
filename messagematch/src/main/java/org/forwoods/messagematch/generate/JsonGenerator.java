@@ -72,7 +72,7 @@ public class JsonGenerator {
 		this.rawBindings = bindings;
 	}
 
-	private ValueProvider createValueProvider(String val) {
+	public static ValueProvider createValueProvider(String val) {
 		ValueProvider res = new ValueProvider();
 		res.addConstraint(new ProvidedConstraint(val));
 		return res;
@@ -129,7 +129,7 @@ public class JsonGenerator {
 			return new ReferenceGenerator(bound);
 		}
 		if (matcher.startsWith("$")) {
-			return parseMatcher(matcher);
+			return parseMatcher(matcher, bindings);
 		}
 		if (matcher.startsWith("\\$")) {
 			return new LiteralGenerator(JsonNodeFactory.instance.textNode(matcher.replaceFirst("\\$", "$")));
@@ -137,7 +137,7 @@ public class JsonGenerator {
 		return new LiteralGenerator(matcherNode);
 	}
 	
-	private NodeGenerator parseMatcher(String matcher) {
+	public static NodeGenerator parseMatcher(String matcher, Map<String, ValueProvider> bindings) {
 		MatcherLexer l = new MatcherLexer(CharStreams.fromString(matcher));
 		MatcherParser p = new MatcherParser(new CommonTokenStream(l));
 		p.addErrorListener(new BaseErrorListener() {
@@ -199,7 +199,7 @@ public class JsonGenerator {
 				continue;
 			}
 			if (key.startsWith("$")) {
-				NodeGenerator gen = parseMatcher(key);
+				NodeGenerator gen = parseMatcher(key, bindings);
 				JsonNode generate = gen.generate();
 				key = generate.asText();
 			}

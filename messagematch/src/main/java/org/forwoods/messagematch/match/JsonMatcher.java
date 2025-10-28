@@ -66,7 +66,7 @@ public class JsonMatcher {
         return mapper.readTree(matcher);
     }
 
-    public JsonMatcher(JsonNode matcher, String concrete) throws IOException {
+    public JsonMatcher(JsonNode matcher, String concrete) throws JsonProcessingException {
         this(matcher, readNodes(concrete));
     }
 
@@ -181,7 +181,7 @@ public class JsonMatcher {
         return matches;
     }
 
-    private FieldMatcher<?> parseMatcher(String matcher) {
+    public static FieldMatcher<?> parseMatcher(String matcher) {
         MatcherLexer l = new MatcherLexer(CharStreams.fromString(matcher));
         MatcherParser p = new MatcherParser(new CommonTokenStream(l));
         p.addErrorListener(new BaseErrorListener() {
