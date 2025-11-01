@@ -11,7 +11,6 @@ import org.forwoods.messagematch.spec.CallExample;
 import org.forwoods.messagematch.spec.URIChannel;
 import org.apache.commons.lang3.StringUtils;
 
-import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,18 +31,16 @@ public class ScenarioMatcher {
             try {
                 final CallExample<URIChannel> expectedCall = currentState.getExpectedCalls().get(i);
 
-
                 //the attempt to match the body will update binding - if we fail we don't want the bindings to stick around
                 Map<String, Object> updatedBinding = new HashMap<>(bindings);
                 matched = matches(expectedCall, path, body, method, updatedBinding);
                 if (matched) {
                     System.out.println("matched body");
-                    return returnSucessfulMatch(expectedCall, updatedBinding);
+                    return returnSuccessfulMatch(expectedCall, updatedBinding);
                 }
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
-
         }
         if (state < scenario.getExpectedStates().size() - 1) {
             int newStateNum = state + 1;
@@ -53,7 +50,8 @@ public class ScenarioMatcher {
                 Map<String, Object> updatedBinding = new HashMap<>(bindings);
                 matched = matches(stateTrigger, path, body, method, updatedBinding);
                 if (matched) {
-                    return returnSucessfulMatch(stateTrigger, updatedBinding);
+                    state = newStateNum;
+                    return returnSuccessfulMatch(stateTrigger, updatedBinding);
                 }
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -88,22 +86,19 @@ public class ScenarioMatcher {
         return false;
     }
 
-    private HttpResponse returnSucessfulMatch(CallExample<URIChannel> expectedCall, Map<String, Object> bindings) {
+    private HttpResponse returnSuccessfulMatch(CallExample<URIChannel> expectedCall, Map<String, Object> bindings) {
         HttpResponse response;
         final int statusCode = expectedCall.getChannel().getStatusCode() == 0 ? 200 : expectedCall.getChannel().getStatusCode();
         if (expectedCall.getResponseMessage() != null) {
             JsonGenerator generator = new JsonGenerator(expectedCall.getResponseMessage(), bindings);
             final JsonNode generatedJson = generator.generate();
+            bindings.putAll(generator.getBindings());
             response = new HttpResponse(statusCode, generatedJson);
         } else {
             response = new HttpResponse(statusCode, null);
         }
         this.bindings.putAll(bindings);
         return response;
-    }
-
-    public int getState() {
-        return state;
     }
 
     public record HttpResponse(int statusCode, JsonNode responseBody) {

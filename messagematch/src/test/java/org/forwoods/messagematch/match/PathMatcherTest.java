@@ -26,9 +26,10 @@ public class PathMatcherTest
         String concrete = "/7/storedNumbers";
         final PathMatcher pathMatcher = new PathMatcher(matcherPath, concrete, Map.of("from", "Bristol"));
         assertTrue(pathMatcher.matches());
+        assertEquals("7", pathMatcher.getBindings().get("accountId"));
     }
     @Test
-    public void shouldMatch()
+    public void shouldMatchComplexMatcher()
     {
         String matcherPath = "/travel/{$String=from}-{$String=to}";
         String concrete = "/travel/London-Edinburgh";
@@ -53,6 +54,15 @@ public class PathMatcherTest
         String matcherPath = "/travel/{$String=from}-{$String=to}";
         String concrete = "/travel/London-Edinburgh";
         final PathMatcher pathMatcher = new PathMatcher(matcherPath, concrete, Map.of("from", "Bristol"));
+        assertFalse(pathMatcher.matches());
+    }
+
+    @Test
+    public void shouldMatchWholePath()
+    {
+        String matcherPath = "/storedNumbers";
+        String concrete = "/storedNumbersBroken";
+        final PathMatcher pathMatcher = new PathMatcher(matcherPath, concrete, Map.of());
         assertFalse(pathMatcher.matches());
     }
 }

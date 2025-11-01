@@ -90,9 +90,9 @@ export class ValueProvider {
         this.constraints.add(constraint);
     }
 
-    asInt(): bigint {
+    asInt(): number {
         const val = this.generate();
-        return BigInt(val); // Constraint should ensure this is safe
+        return Number(val); // Constraint should ensure this is safe
     }
 
     asNum(): number {

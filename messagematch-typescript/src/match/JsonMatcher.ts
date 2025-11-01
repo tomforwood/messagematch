@@ -92,7 +92,7 @@ export class JsonMatcher {
 				matches = false;
 			} else {
 				try {
-					const fm = this.parseMatcher(matcherStr);
+					const fm = JsonMatcher.parseMatcher(matcherStr);
 					matches = fm.matches(concreteStr, this.bindings);
 				} catch (e:any) {
 					if (e instanceof UnboundVariableException) {
@@ -116,7 +116,7 @@ export class JsonMatcher {
 		return matches;
 	}
 
-	private parseMatcher(matcher: string): FieldMatcher<any> {
+	public static parseMatcher(matcher: string): FieldMatcher<any> {
 		// Use antlr4 generated lexer/parser to build a matcher listener
 		const antlr4 = require('antlr4');
 		const chars = new antlr4.InputStream(matcher);
@@ -278,7 +278,7 @@ export class JsonMatcher {
 				}
 				if (key === '$ID') { id = child; continue; }
 				// matcher as key
-				const matcher: FieldMatcher<any> = this.parseMatcher(key);
+				const matcher: FieldMatcher<any> = JsonMatcher.parseMatcher(key);
 				matchedNodes = {};
 				for (const k of Object.keys(concreteNode)) {
 					if (matcher.matches(k, this.bindings)) {

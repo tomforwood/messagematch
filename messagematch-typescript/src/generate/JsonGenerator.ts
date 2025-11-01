@@ -1,10 +1,10 @@
-import { Temporal } from '@js-temporal/polyfill';
-import { ValueProvider } from './ValueProvider';
-import { ProvidedConstraint } from './constraints/ProvidedConstraint';
-import { NodeGenerator } from './nodegenerators/NodeGenerator';
-import { LiteralGenerator } from './nodegenerators/LiteralGenerator';
-import { ReferenceGenerator } from './nodegenerators/ReferenceGenerator';
-import { PathExtractor } from './utils/PathExtractor';
+import {Temporal} from '@js-temporal/polyfill';
+import {ValueProvider} from './ValueProvider';
+import {ProvidedConstraint} from './constraints/ProvidedConstraint';
+import {NodeGenerator} from './nodegenerators/NodeGenerator';
+import {LiteralGenerator} from './nodegenerators/LiteralGenerator';
+import {ReferenceGenerator} from './nodegenerators/ReferenceGenerator';
+import {PathExtractor} from './utils/PathExtractor';
 import {ObjectTypeGenerator} from "./nodegenerators/ObjectTypeGenerator";
 import MatcherLexer from "../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherLexer";
 import MatcherParser from "../antlr4ts/org/forwoods/messagematch/matchgrammar/MatcherParser";
@@ -142,8 +142,7 @@ export class JsonGenerator {
             if (k == "$ID") continue; //TODO implement this
             if (k.startsWith("$")) {
                 const gen = this.parseMatcher(k);
-                const kenKey = gen.generate();
-                k = kenKey;
+                k = gen.generate();
             }
             objectTypeGenerator.addChild(k, this.generateNode(value));
         }
@@ -158,6 +157,14 @@ export class JsonGenerator {
         const res = new ValueProvider();
         res.addConstraint(new ProvidedConstraint(val));
         return res;
+    }
+
+    getBindings(): Record<string, string> {
+        const result:Record<string, string> = {};
+        Object.entries(this.bindings).forEach(([key, value]) => {
+            result[key] = value.asString();
+        });
+        return result;
     }
 }
 

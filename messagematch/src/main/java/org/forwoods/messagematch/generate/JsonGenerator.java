@@ -1,5 +1,29 @@
 package org.forwoods.messagematch.generate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ValueNode;
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.forwoods.messagematch.generate.nodegenerators.ArraySizeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.ArrayTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.LiteralGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.NodeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.ObjectTypeGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.ReferenceGenerator;
+import org.forwoods.messagematch.generate.nodegenerators.ValueProvider;
+import org.forwoods.messagematch.generate.nodegenerators.constraints.ProvidedConstraint;
+import org.forwoods.messagematch.matchgrammar.MatcherLexer;
+import org.forwoods.messagematch.matchgrammar.MatcherParser;
+import org.forwoods.messagematch.util.PathExtractor;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -11,25 +35,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import org.forwoods.messagematch.generate.nodegenerators.*;
-import org.antlr.v4.runtime.BaseErrorListener;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.forwoods.messagematch.generate.nodegenerators.constraints.ProvidedConstraint;
-import org.forwoods.messagematch.matchgrammar.MatcherLexer;
-import org.forwoods.messagematch.matchgrammar.MatcherParser;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ValueNode;
-import org.forwoods.messagematch.util.PathExtractor;
 
 import static org.forwoods.messagematch.match.JsonMatcher.sizePattern;
 
@@ -176,29 +181,34 @@ public class JsonGenerator {
 		for (Iterator<Map.Entry<String, JsonNode>> iterator = matcherNode.fields(); iterator.hasNext();) {
 			Map.Entry<String, JsonNode> child = iterator.next();
 			String key = child.getKey();
-			if (key.equals("$Strict")) continue;
-			if (key.equals("$Size")) { //This is a magic size object at the start of an array
-				JsonNode node = child.getValue();
-				String bounds = node.asText();
-				Matcher m = sizePattern.matcher(bounds);
-				Integer min = null;
-				Integer max = null;
-				if (m.matches()) {
-					if (m.group(1).length() > 0) {
-						min = Integer.valueOf(m.group(1));
-					}
-					if (m.group(2).length() > 0) {
-						max = Integer.valueOf(m.group(2));
-					}
-				}
-				return new ArraySizeGenerator(min, max);}
-			if (key.equals("$ID")) {
-				JsonNode bound = PathExtractor.extractObjectNode(child.getValue().asText(),rawBindings);
-				if (bound!=null)
-					return new ReferenceGenerator(bound);
-				continue;
-			}
-			if (key.startsWith("$")) {
+            switch (key) {
+                case "$Strict" -> {
+                    continue;
+                }
+                case "$Size" -> {
+                    JsonNode node = child.getValue();
+                    String bounds = node.asText();
+                    Matcher m = sizePattern.matcher(bounds);
+                    Integer min = null;
+                    Integer max = null;
+                    if (m.matches()) {
+                        if (!m.group(1).isEmpty()) {
+                            min = Integer.valueOf(m.group(1));
+                        }
+                        if (!m.group(2).isEmpty()) {
+                            max = Integer.valueOf(m.group(2));
+                        }
+                    }
+                    return new ArraySizeGenerator(min, max);
+                }
+                case "$ID" -> {
+                    JsonNode bound = PathExtractor.extractObjectNode(child.getValue().asText(), rawBindings);
+                    if (bound != null)
+                        return new ReferenceGenerator(bound);
+                    continue;
+                }
+            }
+            if (key.startsWith("$")) {
 				NodeGenerator gen = parseMatcher(key, bindings);
 				JsonNode generate = gen.generate();
 				key = generate.asText();
@@ -208,4 +218,7 @@ public class JsonGenerator {
 		return object;
 	}
 
+	public Map<String, Object> getBindings() {
+		return this.bindings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e->e.getValue().asString()));
+	}
 }
