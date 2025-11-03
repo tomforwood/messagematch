@@ -1,5 +1,6 @@
 import { expect, test, describe } from 'vitest';
 import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { JsonMatcher } from './JsonMatcher';
 
 type MatchingTest = { matchFile: string, concreteFile: string, expectsMatch: boolean, error?: string };
@@ -26,8 +27,6 @@ const tests: MatchingTest[] = [
     { matchFile: 'int-type', concreteFile: 'int-type-null', expectsMatch: false, error: 'Error at root:value expected matching $Int but was null' },
     { matchFile: 'int-type-nullable', concreteFile: 'int-type-null', expectsMatch: true },
 ];
-
-import { resolve } from 'path';
 
 function loadResource(path: string) {
     // repo root is four levels up from this test directory

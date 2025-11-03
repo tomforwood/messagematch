@@ -44,7 +44,7 @@ export class NumTypeGenerator extends NodeGenerator{
 }
 
 export class InstantTypeGenerator extends NodeGenerator{
-    constructor(valueProvider: ValueProvider, instant:bigint) {
+    constructor(valueProvider: ValueProvider, instant:bigint|number) {
         super(valueProvider);
         valueProvider.addConstraint(instantConstraint(instant))
     }
