@@ -1,9 +1,7 @@
 package org.forwoods.messagematch.apiTester;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -12,12 +10,9 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class NumberStoreServer
@@ -34,7 +29,7 @@ public class NumberStoreServer
 
         router.route().handler(BodyHandler.create());
         router.get("/:accountId/storedNumbers").handler(application::getNumbers);
-        router.put("/:accountId/storedNumbers").handler(application::storeNumbers);
+        router.post("/:accountId/storedNumbers").handler(application::storeNumbers);
 
         HttpServer httpServer = vertx.createHttpServer();
         return httpServer.requestHandler(router).listen(-1).map(s -> {
@@ -60,7 +55,8 @@ public class NumberStoreServer
                 return;
             }
             store.addAll(toAdd);
-            String res = mapper.writeValueAsString(store);
+            NumberRecord result = new NumberRecord(accountId, store);
+            String res = mapper.writeValueAsString(result);
             ctx.response().send(res);
         } catch (JsonProcessingException e)
         {
@@ -88,4 +84,6 @@ public class NumberStoreServer
     {
         return port;
     }
+
+    private record NumberRecord(int id, List<Integer> val){}
 }

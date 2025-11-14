@@ -19,24 +19,14 @@
       "stateTrigger": {
         "channel": {
           "@type": "uri",
-          "method": "PUT",
-          "statusCode": 200,
+          "method": "POST",
+          "statusCode": 400,
           "path": "/{$Int=accountId}/storedNumbers"
         },
-        "requestMessage": ["$Int=myVal"],
-        "responseMessage": ["$Int=myVal"]
+        "requestMessage": ["-1"],
+        "responseMessage": "No negative numbers allowed"
       },
       "expectedCalls": [
-        {
-          "channel": {
-            "@type": "uri",
-            "method": "GET",
-            "statusCode": 200,
-            "path": "/{$Int=accountId}/storedNumbers"
-          },
-          "requestMessage": null,
-          "responseMessage": ["$Int=myVal"]
-        }
       ]
     }
   ]

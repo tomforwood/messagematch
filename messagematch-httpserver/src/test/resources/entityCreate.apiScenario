@@ -1,19 +1,8 @@
 {
-  "scenarioName": "numberStore",
+  "scenarioName": "entityCreate",
   "expectedStates": [
     {
-      "expectedCalls": [
-        {
-          "channel": {
-            "@type": "uri",
-            "method": "GET",
-            "statusCode": 200,
-            "path": "/{$Int=accountId}/storedNumbers"
-          },
-          "requestMessage": null,
-          "responseMessage": []
-        }
-      ]
+      "expectedCalls": []
     },
     {
       "stateTrigger": {
@@ -23,8 +12,8 @@
           "statusCode": 200,
           "path": "/{$Int=accountId}/storedNumbers"
         },
-        "requestMessage": ["-1"],
-        "responseMessage": {"id": "$Int=myId","val":[-1]}
+        "requestMessage": ["$Int=myVal"],
+        "responseMessage": {"id": "$Int=myId","val":["$Int=myVal"]}
       },
       "expectedCalls": [
         {
@@ -32,7 +21,7 @@
             "@type": "uri",
             "method": "GET",
             "statusCode": 200,
-            "path": "/{$Int=accountId}/storedNumbers"
+            "path": "/{$Int=accountId}/storedNumbers/"
           },
           "requestMessage": null,
           "responseMessage": ["$Int=myVal"]

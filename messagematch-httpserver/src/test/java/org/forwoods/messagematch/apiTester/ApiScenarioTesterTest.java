@@ -17,7 +17,7 @@ import java.util.Map;
 
 public class ApiScenarioTesterTest
 {
-    static List<String> specFiles = List.of("numberStore.apiScenario", "numberStoreNegative.apiScenario");
+    static List<String> specFiles = List.of("entityCreate.apiScenario", "numberStoreNegative.apiScenario", "numberStoreNegativeFails.apiScenario");
     static Map<String, APITestScenario> specs = new HashMap<>();
     URI baseUri;
 
@@ -50,23 +50,35 @@ public class ApiScenarioTesterTest
         applicationFuture.onComplete(ar ->
                 baseUri = URI.create("http://localhost:" + ar.result().getPort()));
         applicationFuture.await();
-        //client = HttpClients.createDefault();
     }
 
     @Test
     public void testWorkingSpec()
     {
         //doSetup
-//        APITestScenario spec = specs.get("entityCreate.apiScenario");
-//        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
-//        tester.executeTestScenario(new HashMap<>());
+        //e.g. create the "account" that the scenario is going to use
+
+        //do scenario
+        APITestScenario spec = specs.get("entityCreate.apiScenario");
+        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
+        tester.executeTestScenario(new HashMap<>());
     }
 
     @Test
     public void testBrokenSpec()
     {
-//        APITestScenario spec = specs.get("numberStoreNegative.apiScenario");
-//        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
-//        assertThrows(AssertionFailedError.class, ()->tester.executeTestScenario(new HashMap<>()), "Should have failed");
+        APITestScenario spec = specs.get("numberStoreNegative.apiScenario");
+        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
+        tester.executeTestScenario(new HashMap<>());
+        //assertThrows(AssertionFailedError.class, ()->tester.executeTestScenario(new HashMap<>()), "Should have failed");
+    }
+
+    @Test
+    public void testCantStoreNegatveNumbers()
+    {
+        APITestScenario spec = specs.get("numberStoreNegativeFails.apiScenario");
+        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
+        tester.executeTestScenario(new HashMap<>());
+        //assertThrows(AssertionFailedError.class, ()->tester.executeTestScenario(new HashMap<>()), "Should have failed");
     }
 }

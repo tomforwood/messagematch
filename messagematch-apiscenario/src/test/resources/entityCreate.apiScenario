@@ -8,7 +8,7 @@
       "stateTrigger": {
         "channel": {
           "@type": "uri",
-          "method": "PUT",
+          "method": "POST",
           "statusCode": 200,
           "path": "/{$Int=accountId}/storedNumbers"
         },
