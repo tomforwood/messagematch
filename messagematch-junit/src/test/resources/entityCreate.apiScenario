@@ -1,0 +1,32 @@
+{
+  "scenarioName": "entityCreate",
+  "expectedStates": [
+    {
+      "expectedCalls": []
+    },
+    {
+      "stateTrigger": {
+        "channel": {
+          "@type": "uri",
+          "method": "POST",
+          "statusCode": 200,
+          "path": "/{$Int=accountId}/storedNumbers"
+        },
+        "requestMessage": ["$Int=myVal"],
+        "responseMessage": {"id":  "$Int=myId","val":["$Int=myVal"]}
+      },
+      "expectedCalls": [
+        {
+          "channel": {
+            "@type": "uri",
+            "method": "GET",
+            "statusCode": 200,
+            "path": "/{$Int=accountId}/storedNumbers/{$Int=myId}"
+          },
+          "requestMessage": null,
+          "responseMessage": ["$Int=myVal"]
+        }
+      ]
+    }
+  ]
+}

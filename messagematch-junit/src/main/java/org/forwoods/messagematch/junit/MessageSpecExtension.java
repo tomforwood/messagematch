@@ -24,6 +24,7 @@ public class MessageSpecExtension implements ParameterResolver,
         BeforeAllCallback,
         AfterAllCallback{
     public static final String LAST_USED = ".lastUsed";
+    private static final ExtensionContext.Namespace MESSAGE_SPEC_EXTENSION_NAMESPACE = ExtensionContext.Namespace.create("MessageSpecExtension");
     final Map<String, String> testFiles = new HashMap<>();
 
 
@@ -41,11 +42,15 @@ public class MessageSpecExtension implements ParameterResolver,
 
     @Override
     public void afterAll(ExtensionContext context) {
+        final ExtensionContext.Store store = context.getStore(MESSAGE_SPEC_EXTENSION_NAMESPACE);
+        System.out.println("key =" + store.get("testKey"));
         Mockito.framework().removeListener(mockCreationListener);
     }
 
     @Override
     public void beforeTestExecution(ExtensionContext context) throws Exception {
+        final ExtensionContext.Store store = context.getParent().map(c->c.getStore(MESSAGE_SPEC_EXTENSION_NAMESPACE)).orElseThrow();
+        store.put("testKey", "testValue");
         Object testClass = context.getRequiredTestInstance();
         Class<?> tc = testClass.getClass();
         List<Field> annotatedFields = AnnotationSupport.findAnnotatedFields(tc, MockMap.class);
@@ -86,6 +91,7 @@ public class MessageSpecExtension implements ParameterResolver,
             if (!Objects.equals(specAnnotation.value(), "")) {
                 String testId = extensionContext.getUniqueId();
                 testFiles.put(testId, specAnnotation.value());
+
                 return loadSpec(specAnnotation.value());
             }
         }
