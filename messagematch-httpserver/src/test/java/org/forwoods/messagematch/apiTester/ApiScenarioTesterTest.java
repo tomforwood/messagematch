@@ -1,45 +1,26 @@
 package org.forwoods.messagematch.apiTester;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import org.forwoods.messagematch.apiscenario.spec.APITestScenario;
-import org.junit.jupiter.api.BeforeAll;
+import org.forwoods.messagematch.junit.Scenario;
+import org.forwoods.messagematch.junit.ScenarioExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
+/**
+ * This is an example of a Scenario test
+ * For your real system you would create a number of test classes that execute
+ * different scenarios against your API
+ */
+@ExtendWith(ScenarioExtension.class)
 public class ApiScenarioTesterTest
 {
-    static List<String> specFiles = List.of("entityCreate.apiScenario", "numberStoreNegative.apiScenario", "numberStoreNegativeFails.apiScenario");
-    static Map<String, APITestScenario> specs = new HashMap<>();
     URI baseUri;
-
-
-    @BeforeAll
-    public static void setupAll()
-    {
-
-        for (final String specFile : specFiles)
-        {
-            try (InputStream fin = ApiScenarioTesterTest.class.getClassLoader().getResourceAsStream(specFile))
-            {
-                ObjectMapper mapper = new ObjectMapper();
-                final APITestScenario apiSpec = mapper.readValue(fin, APITestScenario.class);
-                specs.put(specFile, apiSpec);
-
-            } catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 
     @BeforeEach
     public void setupEach()
@@ -53,32 +34,31 @@ public class ApiScenarioTesterTest
     }
 
     @Test
-    public void testWorkingSpec()
+    public void testWorkingSpec(@Scenario("entityCreate.apiScenario") APITestScenario scenario)
     {
-        //doSetup
+        //if this were a real service we were testing we would nee to do some setup
+        //to put it into a state where this test will pass
         //e.g. create the "account" that the scenario is going to use
+        ApiScenarioTester tester = new ApiScenarioTester(scenario, baseUri);
+        tester.executeTestScenario(new HashMap<>());
+    }
 
-        //do scenario
-        APITestScenario spec = specs.get("entityCreate.apiScenario");
-        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
+    /*
+    This test does not in fact pass - the NumberServer cannot store negative numbers
+    It will be recorded in the test database as a failure
+     */
+    @Test
+    public void testBrokenSpec(@Scenario("numberStoreNegative.apiScenario") APITestScenario scenario)
+    {
+        //Yuo would not expect to write a failing scenario
+        ApiScenarioTester tester = new ApiScenarioTester(scenario, baseUri);
         tester.executeTestScenario(new HashMap<>());
     }
 
     @Test
-    public void testBrokenSpec()
+    public void testCantStoreNegativeNumbers(@Scenario("numberStoreNegativeFails.apiScenario") APITestScenario scenario)
     {
-        APITestScenario spec = specs.get("numberStoreNegative.apiScenario");
-        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
+        ApiScenarioTester tester = new ApiScenarioTester(scenario, baseUri);
         tester.executeTestScenario(new HashMap<>());
-        //assertThrows(AssertionFailedError.class, ()->tester.executeTestScenario(new HashMap<>()), "Should have failed");
-    }
-
-    @Test
-    public void testCantStoreNegatveNumbers()
-    {
-        APITestScenario spec = specs.get("numberStoreNegativeFails.apiScenario");
-        ApiScenarioTester tester = new ApiScenarioTester(spec, baseUri);
-        tester.executeTestScenario(new HashMap<>());
-        //assertThrows(AssertionFailedError.class, ()->tester.executeTestScenario(new HashMap<>()), "Should have failed");
     }
 }

@@ -20,7 +20,7 @@ class ScenarioMatcherTest {
         APITestScenario scenario = mapper.readValue(in, APITestScenario.class);
         ScenarioMatcher matcher = new ScenarioMatcher(scenario);
 
-        final ScenarioMatcher.HttpResponse put = matcher.findMatchHttp("/5/storedNumbers", "[\"7\"]", "PUT");
+        final ScenarioMatcher.HttpResponse put = matcher.findMatchHttp("/5/storedNumbers", "[\"7\"]", "POST");
         assertThat(put).isNotNull();
         final int id = put.responseBody().get("id").asInt();
 
@@ -40,7 +40,7 @@ class ScenarioMatcherTest {
         APITestScenario scenario = mapper.readValue(in, APITestScenario.class);
         ScenarioMatcher matcher = new ScenarioMatcher(scenario);
 
-        final ScenarioMatcher.HttpResponse put = matcher.findMatchHttp("/5/storedNumbers", "[\"5\"]", "PUT");
+        final ScenarioMatcher.HttpResponse put = matcher.findMatchHttp("/5/storedNumbers", "[\"5\"]", "POST");
         assertThat(put).isNotNull();
         final int id = put.responseBody().get("id").asInt();
 

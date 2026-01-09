@@ -58,9 +58,7 @@ public class ApiScenarioTester
             {
                 executeCall(state.getStateTrigger(), bindings);
             }
-            state.getExpectedCalls().forEach(expectedCall -> {
-                executeCall(expectedCall, bindings);
-            });
+            state.getExpectedCalls().forEach(expectedCall -> executeCall(expectedCall, bindings));
         });
     }
 
@@ -91,7 +89,7 @@ public class ApiScenarioTester
                 default ->
                         throw new IllegalStateException("Unexpected value: " + callUnderTest.getChannel().getMethod());
             };
-            headers.entrySet().forEach(entry -> request.setHeader(entry.getKey(), entry.getValue()));
+            headers.forEach(request::setHeader);
             final CloseableHttpResponse httpResponse = httpClient.execute(request);
             if (callUnderTest.getChannel().getStatusCode() > 0 && httpResponse.getStatusLine().getStatusCode() != callUnderTest.getChannel().getStatusCode())
             {
@@ -101,14 +99,15 @@ public class ApiScenarioTester
             {
                 fail("Call to " + callUnderTest.getChannel().getMethod() + " " + path + " return statusMessage "+ httpResponse.getStatusLine().getReasonPhrase() + " expected "+callUnderTest.getChannel().getStatusLine());
             }
+            if (callUnderTest.getResponseMessage()!=null) {
+                JsonMatcher matcher = new JsonMatcher(callUnderTest.getResponseMessage(), EntityUtils.toString(httpResponse.getEntity()));
+                matcher.getBindings().putAll(bindings);
+                if (!matcher.matches()) {
+                    fail("Call to " + path + " returned a body that didn't match");
+                }
 
-            JsonMatcher matcher = new JsonMatcher(callUnderTest.getResponseMessage(), EntityUtils.toString(httpResponse.getEntity()));
-            matcher.getBindings().putAll(bindings);
-            if (!matcher.matches())
-            {
-                fail("Call to "+ path + " returned a body that didn't match");//TODO probably want the full body or use the argumentMatcher
+                bindings.putAll(matcher.getBindings());
             }
-            bindings.putAll(matcher.getBindings());
 
         } catch (IOException e)
         {

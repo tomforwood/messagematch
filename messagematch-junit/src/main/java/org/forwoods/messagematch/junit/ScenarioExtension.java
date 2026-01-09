@@ -22,26 +22,26 @@ public class ScenarioExtension implements ParameterResolver, AfterEachCallback {
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(ScenarioExtension.class);
 
     @Override
-    public void afterEach(final ExtensionContext context) throws Exception {
-        context.getTestMethod().ifPresent(method -> {
-            context.getExecutionException().ifPresentOrElse( e->{},
-                    ()->{
-                        final APIScenarioLoadDetails apiTestScenario = context.getStore(NAMESPACE).get(method, APIScenarioLoadDetails.class);
-
-                        if (apiTestScenario!=null) {
-                            //Check lifecycle to see if we need the parent context;
-                            context.getParent().ifPresent(parentContext -> {
-                                final SuccessfulScenarioTest testRecord = buildSuccessfulScenarioTest(method, apiTestScenario);
-                                TestRunStore.INSTANCE.storeTestRun(testRecord);
-                                //parentContext.getStore(NAMESPACE).put(method, testRecord);
-                            });
-                        }
-                    });
-        });
+    public void afterEach(final ExtensionContext context) {
+        context.getTestMethod().ifPresent(method -> uploadScenarioResult(context, method, context.getExecutionException().isEmpty()));
     }
 
-    private SuccessfulScenarioTest buildSuccessfulScenarioTest(final Method method, final APIScenarioLoadDetails apiTestScenario) {
-        return new SuccessfulScenarioTest(method.toString(), apiTestScenario.path, apiTestScenario.hash, null, Instant.now());
+    private void uploadScenarioResult(final ExtensionContext context, final Method method, final boolean result) {
+        final APIScenarioLoadDetails apiTestScenario = context.getStore(NAMESPACE).get(method, APIScenarioLoadDetails.class);
+
+        if (apiTestScenario!=null) {
+            //Check lifecycle to see if we need the parent context;
+            context.getParent().ifPresent(parentContext -> {
+                final ScenarioTest testRecord = buildScenarioTest(result, method, apiTestScenario);
+                TestRunStore.INSTANCE.storeTestRun(testRecord);
+            });
+        }
+    }
+
+    private ScenarioTest buildScenarioTest(boolean result, final Method method, final APIScenarioLoadDetails apiTestScenario) {
+        String apiVersion = Optional.ofNullable(System.getenv("MESSAGEMATCH_API_VERSION")).orElse("UNVERSIONED");
+        String api = Optional.ofNullable(System.getenv("MESSAGEMATCH_API")).orElse("UNNAMED");
+        return new ScenarioTest(result, api, method.toString(), apiTestScenario.path, apiTestScenario.hash, apiVersion, Instant.now());
     }
 
     @Override
@@ -73,6 +73,7 @@ public class ScenarioExtension implements ParameterResolver, AfterEachCallback {
     private APIScenarioLoadDetails loadSpec(final String scenarioName) {
         try(final InputStream resourceAsStream = ScenarioExtension.class.getClassLoader().getResourceAsStream(scenarioName))
         {
+            assert resourceAsStream != null;
             HashingInputStream his = new HashingInputStream(Hashing.crc32(), resourceAsStream);
             final APITestScenario apiTestScenario = APITestScenario.specParser.readValue(his, APITestScenario.class);
             return new APIScenarioLoadDetails(apiTestScenario, scenarioName, Long.toString(his.hash().asInt()));

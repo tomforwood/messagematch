@@ -20,11 +20,11 @@
         "channel": {
           "@type": "uri",
           "method": "POST",
+          "path": "/{$Int=accountId}/storedNumbers",
           "statusCode": 400,
-          "path": "/{$Int=accountId}/storedNumbers"
+          "statusLine": "I don't support negative numbers"
         },
-        "requestMessage": ["-1"],
-        "responseMessage": "No negative numbers allowed"
+        "requestMessage": ["-1"]
       },
       "expectedCalls": [
       ]

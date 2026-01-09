@@ -18,6 +18,7 @@
 <!--        <module>messagematch-server</module>-->
         <module>messagematch-httpserver</module>
         <module>messagematch-apiscenario</module>
+        <module>messagematch-reporting</module>
     </modules>
     <packaging>pom</packaging>
     <name>Message Match</name>

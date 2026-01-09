@@ -5,20 +5,18 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(ScenarioExtension.class)
 public class ScenarioExtensionTest {
 
     @Test
-    public void testLoad(@Scenario("entityCreate.apiScenario") APITestScenario scenario) {
-        assertTrue(scenario !=null);
+    public void testLoad(@Scenario("scentest.apiScenario") APITestScenario scenario) {
+        assertNotNull(scenario);
     }
 
     @AfterAll
-    public static void testLastRunFile() throws IOException {
+    public static void testLastRunFile() {
 
     }
 
