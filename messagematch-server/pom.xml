@@ -5,7 +5,7 @@
     <parent>
         <artifactId>messagematch-parent</artifactId>
         <groupId>org.forwoods</groupId>
-        <version>0.1.6-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -53,7 +53,7 @@
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>6.3.0.202209071007-r</version>
+            <version>6.6.1.202309021850-r</version>
         </dependency>
 
 <!--        <dependency>-->
@@ -72,13 +72,13 @@
         <dependency>
             <groupId>org.forwoods</groupId>
             <artifactId>messagematch-junit</artifactId>
-            <version>0.1.6-SNAPSHOT</version>
+            <version>${revision}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.forwoods</groupId>
             <artifactId>messagematch-mongo</artifactId>
-            <version>0.1.6-SNAPSHOT</version>
+            <version>${revision}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

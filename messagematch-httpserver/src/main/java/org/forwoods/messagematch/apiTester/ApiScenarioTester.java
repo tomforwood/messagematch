@@ -1,17 +1,12 @@
 package org.forwoods.messagematch.apiTester;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.*;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.forwoods.messagematch.apiscenario.spec.APITestScenario;
 import org.forwoods.messagematch.generate.JsonGenerator;
 import org.forwoods.messagematch.generate.PathGenerator;
@@ -90,24 +85,25 @@ public class ApiScenarioTester
                         throw new IllegalStateException("Unexpected value: " + callUnderTest.getChannel().getMethod());
             };
             headers.forEach(request::setHeader);
-            final CloseableHttpResponse httpResponse = httpClient.execute(request);
-            if (callUnderTest.getChannel().getStatusCode() > 0 && httpResponse.getStatusLine().getStatusCode() != callUnderTest.getChannel().getStatusCode())
-            {
-                fail("Call to " + callUnderTest.getChannel().getMethod() + " " + path + " returned statuscode "+ httpResponse.getStatusLine().getStatusCode() + " expected "+callUnderTest.getChannel().getStatusCode());
-            }
-            if (callUnderTest.getChannel().getStatusLine() != null && !httpResponse.getStatusLine().getReasonPhrase().equals(callUnderTest.getChannel().getStatusLine()))
-            {
-                fail("Call to " + callUnderTest.getChannel().getMethod() + " " + path + " return statusMessage "+ httpResponse.getStatusLine().getReasonPhrase() + " expected "+callUnderTest.getChannel().getStatusLine());
-            }
-            if (callUnderTest.getResponseMessage()!=null) {
-                JsonMatcher matcher = new JsonMatcher(callUnderTest.getResponseMessage(), EntityUtils.toString(httpResponse.getEntity()));
-                matcher.getBindings().putAll(bindings);
-                if (!matcher.matches()) {
-                    fail("Call to " + path + " returned a body that didn't match");
+            httpClient.execute(request, response -> {
+                if (callUnderTest.getChannel().getStatusCode() > 0 && response.getCode() != callUnderTest.getChannel().getStatusCode()) {
+                    fail("Call to " + callUnderTest.getChannel().getMethod() + " " + path + " returned statuscode " + response.getCode() + " expected " + callUnderTest.getChannel().getStatusCode());
                 }
+                if (callUnderTest.getChannel().getStatusLine() != null && !response.getReasonPhrase().equals(callUnderTest.getChannel().getStatusLine())) {
+                    fail("Call to " + callUnderTest.getChannel().getMethod() + " " + path + " return statusMessage " + response.getReasonPhrase() + " expected " + callUnderTest.getChannel().getStatusLine());
+                }
+                if (callUnderTest.getResponseMessage() != null) {
+                    JsonMatcher matcher = new JsonMatcher(callUnderTest.getResponseMessage(), EntityUtils.toString(response.getEntity()));
+                    matcher.getBindings().putAll(bindings);
+                    if (!matcher.matches()) {
+                        fail("Call to " + path + " returned a body that didn't match");
+                    }
 
-                bindings.putAll(matcher.getBindings());
-            }
+                    bindings.putAll(matcher.getBindings());
+                }
+                return null;
+            });
+
 
         } catch (IOException e)
         {
@@ -115,7 +111,7 @@ public class ApiScenarioTester
         }
     }
 
-    private void setBody(final HttpEntityEnclosingRequestBase httpRequest, final JsonNode requestMessage, final Map<String, Object> bindings) throws UnsupportedEncodingException
+    private void setBody(final BasicClassicHttpRequest httpRequest, final JsonNode requestMessage, final Map<String, Object> bindings) throws UnsupportedEncodingException
     {
         JsonGenerator generator = new JsonGenerator(requestMessage, bindings);
         final String text = generator.generate().toString();

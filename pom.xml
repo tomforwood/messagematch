@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.forwoods</groupId>
     <artifactId>messagematch-parent</artifactId>
-    <version>0.1.6-SNAPSHOT</version>
+    <version>${revision}</version>
     <modules>
         <module>messagematch-junit</module>
         <module>messagematch-apachehttp</module>
@@ -47,12 +47,13 @@
     </developers>
 
     <properties>
+        <revision>0.1.6-SNAPSHOT</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.release>${java.version}</maven.compiler.release>
-        <jackson-core.version>2.13.1</jackson-core.version>
+        <jackson-core.version>2.21.1</jackson-core.version>
         <junit>5.11.0</junit>
         <!-- Plugin versions -->
         <maven.compiler>3.8.1</maven.compiler>
@@ -67,12 +68,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.14.2</version>
+            <version>${jackson-core.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.13.1</version>
+            <version>${jackson-core.version}</version>
         </dependency>
         <!-- Dependencies -->
         <!-- Testing dependencies -->

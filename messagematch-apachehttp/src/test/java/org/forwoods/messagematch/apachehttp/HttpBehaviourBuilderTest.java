@@ -2,9 +2,8 @@ package org.forwoods.messagematch.apachehttp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.forwoods.messagematch.spec.TriggeredCall;
 import org.forwoods.messagematch.spec.URIChannel;
 import org.junit.jupiter.api.Test;
@@ -43,10 +42,10 @@ class HttpBehaviourBuilderTest {
 
         URI u = new URI("http://localhost/hello_world?id=1");
         HttpGet get = new HttpGet(u);
-        HttpResponse response = client.execute(get);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-        String l=reader.lines().collect(Collectors.joining());
-
+        String l= client.execute(get, response ->{
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+            return reader.lines().collect(Collectors.joining());
+        });
         assertEquals("\"Hello tom\"", l);
     }
 
